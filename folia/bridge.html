@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Folia Lyrics</title>
 <meta name="referrer" content="no-referrer">
-<link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/xinxiang.css">
 <link rel="stylesheet" href="css/liuguang.css">
@@ -252,6 +251,18 @@
 <script>
 (function(){
 'use strict';
+
+// ===== 歌词字体（由宿主设置） =====
+var foliaDefaultFont='"Inter","PingFang SC","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif'
+var foliaLyricFontFamily=''
+window.foliaGetLyricFontFamily=function(){
+  return foliaLyricFontFamily||foliaDefaultFont
+}
+function applyLyricFontFamily(family){
+  var f=String(family||'').trim()
+  foliaLyricFontFamily=f
+  document.documentElement.style.setProperty('--lyric-font-family',f||foliaDefaultFont)
+}
 
 // ===== 状态 =====
 var S={
@@ -936,6 +947,10 @@ window.addEventListener('message',function(ev){
           intensityOpts.forEach(function(o){o.classList.toggle('selected',o.getAttribute('data-val')===s.intensity)});
         }
       }
+      // 应用宿主歌词字体
+      if(init.lyricFontFamily){
+        applyLyricFontFamily(init.lyricFontFamily);
+      }
       break;
     case'echo-folia:snapshot':
       var snap=d.payload;
@@ -1044,6 +1059,12 @@ window.addEventListener('message',function(ev){
       window._monetBridgeState.bass=S.bass;
       window._monetBridgeState.mid=S.mid;
       window._monetBridgeState.treble=S.treble;
+      break;
+    case'echo-folia:appearance':
+      var appearancePayload=d.payload||{};
+      if(appearancePayload.lyricFontFamily){
+        applyLyricFontFamily(appearancePayload.lyricFontFamily);
+      }
       break;
   }
 });
