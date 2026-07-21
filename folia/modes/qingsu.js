@@ -2,7 +2,6 @@
 // 参照原版 SentenceLayout 算法实现分行、tilt选择、入场动画
 (function(){
 'use strict';
-var U=window.ModeUtils;
 var REM_PX=16;
 
 // 原版 seededRandom: 接受 seed 和 offset 两个参数

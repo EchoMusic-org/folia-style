@@ -301,7 +301,6 @@ var lastPositionAtMs=0;     // 收到时的 Date.now()
 var extrapolateSpeed=1;     // 播放速率
 
 // ===== 工具 =====
-function lerp(a,b,t){return a+(b-a)*t}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function formatTime(ms){var s=Math.floor(ms/1000),m=Math.floor(s/60);s%=60;return m+':'+(s<10?'0':'')+s}
 function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
@@ -314,11 +313,10 @@ function getLocalTimeMs(){
 // ===== 几何背景 =====
 var geoLayer=document.getElementById('geo-layer');
 var shapes=[];
-var geoParticles=[];
 
 function createGeometricBackground(){
   geoLayer.innerHTML='';
-  shapes=[];geoParticles=[];
+  shapes=[];
   var types=['circle','square','triangle','cross'];
   // 15 个几何形状
   for(var i=0;i<15;i++){
@@ -398,10 +396,6 @@ var lyricsLayer=document.getElementById('lyrics-layer');
 var subtitleBar=document.getElementById('subtitle-bar');
 var currentLineEl=null;
 var currentLineStartTime=-1;
-var NON_ENG_REGEX=/[^a-zA-Z0-9\s]/;
-var ENG_WORD_REGEX=/^[a-zA-Z0-9']+$/;
-function isNonEng(text){return NON_ENG_REGEX.test(text)}
-function isEngWord(text){return ENG_WORD_REGEX.test(text.trim())}
 
 var exitTimer=null;
 var preExitTimer=null;
@@ -419,7 +413,7 @@ function initFume(){
   wrap.style.display='';
   if(lyricsLayer)lyricsLayer.style.display='none';
   // 隐藏原始 DOM 背景，使用 fume 专属背景
-  var geoLayer=document.getElementById('geo-layer');
+  geoLayer=document.getElementById('geo-layer');
   if(geoLayer)geoLayer.style.display='none';
   var centerGlow=document.querySelector('.center-glow');
   if(centerGlow)centerGlow.style.display='none';
@@ -529,7 +523,7 @@ function renderLyricLine(){
     if(fc)fc.style.display='none';
     if(lyricsLayer)lyricsLayer.style.display='';
     // 恢复原始 DOM 背景
-    var geoLayer=document.getElementById('geo-layer');
+    geoLayer=document.getElementById('geo-layer');
     if(geoLayer)geoLayer.style.display='';
     var centerGlow=document.querySelector('.center-glow');
     if(centerGlow)centerGlow.style.display='';
@@ -819,7 +813,6 @@ function updateWordStates(){
 }
 
 // ===== 队列 =====
-var queuePanel=document.getElementById('queue-panel');
 var queueList=document.getElementById('queue-list');
 var queueCount=document.getElementById('queue-count');
 
@@ -1092,7 +1085,6 @@ function updateModeIcon(){
 
 // ===== 控件绑定 =====
 var ctrlCapsule=document.querySelector('.ctrl-capsule');
-var bottomBar=document.getElementById('bottom-bar');
 document.getElementById('btn-play').onclick=function(){
   // 乐观更新播放状态，立即阻止退出动画
   S.isPlaying=!S.isPlaying;
@@ -1171,8 +1163,6 @@ if(subtitleBar){
     },120);
   });
 }
-document.getElementById('queue-close').onclick=function(){};
-
 // 设置菜单
 var settingsMenu=document.getElementById('settings-menu');
 var settingsBtn=document.getElementById('settings-btn');
@@ -1336,9 +1326,6 @@ function updateBgLayer(){
 }
 function updateCoverBlurBtn(){
   blurBtn.classList.toggle('active',S.coverBlur);
-}
-function updateRhythmLayer(){
-  // 由 updateBgLayer 统一处理
 }
 document.getElementById('sm-btn-blur').onclick=function(){
   S.coverBlur=!S.coverBlur;
