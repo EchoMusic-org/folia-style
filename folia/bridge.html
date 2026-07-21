@@ -67,6 +67,21 @@
         <span class="sm-source-label">歌词来源</span>
         <span class="sm-source-badge" id="sm-source-badge">酷狗音乐</span>
       </div>
+      <!-- 歌词过滤 -->
+      <div class="sm-row lyric-filter-row">
+        <span class="sm-row-label">歌词过滤</span>
+        <div class="sm-seg">
+          <button class="sm-seg-btn active" id="lyric-filter-on"><span class="sm-bg-dot"></span> 开启</button>
+          <button class="sm-seg-btn" id="lyric-filter-off"><span class="sm-bg-dot"></span> 关闭</button>
+        </div>
+      </div>
+      <div class="sm-row lyric-filter-regex-row" id="lyric-filter-regex-row">
+        <span class="sm-row-label">过滤规则<br><small style="opacity:.6">空=默认</small></span>
+        <div style="display:flex;align-items:center;gap:6px;flex:1">
+          <input type="text" id="lyric-filter-regex-input" class="lyric-filter-input" placeholder="正则表达式" spellcheck="false">
+          <button class="sm-mini-btn" id="lyric-filter-reset-btn" type="button" title="恢复默认">↺</button>
+        </div>
+      </div>
     </div>
     <!-- 设置子页面 -->
     <div class="sm-settings" id="sm-settings">
@@ -264,6 +279,14 @@ function applyLyricFontFamily(family){
   document.documentElement.style.setProperty('--lyric-font-family',f||foliaDefaultFont)
 }
 
+// ===== 歌词过滤 =====
+var DEFAULT_LYRIC_FILTER_REGEX='^([^：]*)：.*$|^([^:]*):.*$|^([^翻唱]*)翻唱.*$|^([^许可]*)许可.*$|^([^音乐人]*)音乐人.*$|^([^国风]*)国风.*$|^([^纯音乐]*)纯音乐.*$|^([^星曜计划]*)星曜计划.*$'
+var lyricFilterEnabled=localStorage.getItem('folia-lyricFilterEnabled')!=='false'
+var lyricFilterRegex=''
+try{lyricFilterRegex=localStorage.getItem('folia-lyricFilterRegex')||''}catch(e){}
+lyricFilterRegex=(function(v){v=String(v||'').trim();if(!v)return '';try{new RegExp(v);return v}catch(e){return DEFAULT_LYRIC_FILTER_REGEX}})(lyricFilterRegex)
+var rawLyricLines=[]
+
 // ===== 状态 =====
 var S={
   track:null,isPlaying:false,currentTimeMs:0,durationMs:0,
@@ -308,6 +331,62 @@ function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;
 function getLocalTimeMs(){
   if(!S.isPlaying)return lastPositionMs;
   return lastPositionMs+(Date.now()-lastPositionAtMs)*extrapolateSpeed;
+}
+
+// ===== 歌词过滤工具 =====
+function activeLyricFilterMatcher(){
+  if(lyricFilterEnabled===false)return null
+  var pattern=lyricFilterRegex||DEFAULT_LYRIC_FILTER_REGEX
+  if(!pattern)return null
+  try{return new RegExp(pattern)}catch(e){return null}
+}
+function lyricLineMatchesFilter(line,matcher){
+  if(!matcher||!line)return false
+  var text=String(line.text||line.secondary||'')
+  if(!text)return false
+  matcher.lastIndex=0
+  return matcher.test(text)
+}
+function buildLyricFilterFallbackLine(line){
+  var track=S.track||{}
+  var title=String((track&&(track.name||track.title))||'').trim()||'未知歌曲'
+  var artist=String((track&&track.artist)||'').trim()||'未知歌手'
+  return{
+    time_ms:line?line.time_ms:0,
+    text:title+' - '+artist,
+    secondary:'',characters:[],
+    duration_ms:line?line.duration_ms:4000
+  }
+}
+function filterLyricLines(lines){
+  if(!Array.isArray(lines)||!lines.length)return[]
+  var matcher=activeLyricFilterMatcher()
+  if(!matcher)return lines
+  var output=[]
+  var insertedFallback=false
+  for(var i=0;i<lines.length;i++){
+    if(!lyricLineMatchesFilter(lines[i],matcher)){
+      output.push(lines[i])
+      continue
+    }
+    if(!output.length&&!insertedFallback){
+      output.push(buildLyricFilterFallbackLine(lines[i]))
+      insertedFallback=true
+    }
+  }
+  return output
+}
+function reFilterLyrics(){
+  S.lyricLines=filterLyricLines(rawLyricLines)
+  S.lyricIndex=-1
+  currentLineStartTime=-1
+  renderLyricLine()
+}
+function saveLyricFilterSettings(){
+  try{
+    localStorage.setItem('folia-lyricFilterEnabled',lyricFilterEnabled?'true':'false')
+    localStorage.setItem('folia-lyricFilterRegex',lyricFilterRegex)
+  }catch(e){console.warn('[Folia] 保存歌词过滤设置失败',e)}
 }
 
 // ===== 几何背景 =====
@@ -973,7 +1052,8 @@ window.addEventListener('message',function(ev){
       }
       break;
     case'echo-folia:lyrics':
-      S.lyricLines=d.payload.lines||[];
+      rawLyricLines=d.payload.lines||[];
+      S.lyricLines=filterLyricLines(rawLyricLines);
       S.lyricIndex=-1;
       currentLineStartTime=-1;
       renderLyricLine();
@@ -1386,6 +1466,52 @@ function setLyricTimeOffset(v){
 }
 document.getElementById('lyric-offset-minus').onclick=function(){setLyricTimeOffset(lyricTimeOffset-0.1)};
 document.getElementById('lyric-offset-plus').onclick=function(){setLyricTimeOffset(lyricTimeOffset+0.1)};
+
+// ===== 歌词过滤控件 =====
+function updateLyricFilterControls(){
+  document.getElementById('lyric-filter-on').classList.toggle('active',lyricFilterEnabled!==false)
+  document.getElementById('lyric-filter-off').classList.toggle('active',lyricFilterEnabled===false)
+  document.getElementById('lyric-filter-regex-row').style.display=lyricFilterEnabled!==false?'':'none'
+  var inputEl=document.getElementById('lyric-filter-regex-input')
+  var displayVal=lyricFilterRegex||DEFAULT_LYRIC_FILTER_REGEX
+  if(inputEl.value!==displayVal)inputEl.value=displayVal
+}
+function applyLyricFilterRegex(pattern){
+  var next=String(pattern||'').trim()
+  if(next){
+    try{new RegExp(next)}catch(e){
+      updateLyricFilterControls()
+      return
+    }
+  }
+  lyricFilterRegex=next
+  if(lyricFilterEnabled!==false)reFilterLyrics()
+  saveLyricFilterSettings()
+  updateLyricFilterControls()
+}
+document.getElementById('lyric-filter-on').onclick=function(){
+  if(lyricFilterEnabled!==false)return
+  lyricFilterEnabled=true
+  if(rawLyricLines.length)reFilterLyrics()
+  updateLyricFilterControls()
+  saveLyricFilterSettings()
+}
+document.getElementById('lyric-filter-off').onclick=function(){
+  if(lyricFilterEnabled===false)return
+  lyricFilterEnabled=false
+  if(rawLyricLines.length)reFilterLyrics()
+  updateLyricFilterControls()
+  saveLyricFilterSettings()
+}
+var filterRegexInput=document.getElementById('lyric-filter-regex-input')
+filterRegexInput.addEventListener('change',function(){applyLyricFilterRegex(filterRegexInput.value)})
+filterRegexInput.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();applyLyricFilterRegex(filterRegexInput.value)}})
+document.getElementById('lyric-filter-reset-btn').onclick=function(){
+  lyricFilterRegex=''
+  filterRegexInput.value=DEFAULT_LYRIC_FILTER_REGEX
+  if(lyricFilterEnabled!==false)reFilterLyrics()
+  saveLyricFilterSettings()
+}
 var volTrack=document.getElementById('sm-volume-track');
 var volDragging=false;
 function volSeek(e){
@@ -1592,6 +1718,8 @@ if(S.coverBlur||S.rhythm){
 }
 // 同步歌词时间矫正控件初始显示
 updateLyricOffsetControls();
+// 同步歌词过滤控件初始显示
+updateLyricFilterControls();
 requestAnimationFrame(tick);
 parent.postMessage({source:'echo-folia-child',type:'echo-folia:ready'},'*');
 
