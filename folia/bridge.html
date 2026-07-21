@@ -52,21 +52,6 @@
     </div>
     <!-- 歌词子页面 -->
     <div class="sm-lyrics" id="sm-lyrics">
-      <div class="sm-lyrics-header">
-        <span class="sm-lyrics-title">歌词</span>
-        <div class="sm-lyrics-actions">
-          <button class="sm-lyrics-btn" id="sm-lyrics-refresh" title="刷新">
-            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
-          </button>
-          <button class="sm-lyrics-btn" id="sm-lyrics-match" title="在线匹配">
-            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          </button>
-        </div>
-      </div>
-      <div class="sm-source-row">
-        <span class="sm-source-label">歌词来源</span>
-        <span class="sm-source-badge" id="sm-source-badge">酷狗音乐</span>
-      </div>
       <!-- 歌词过滤 -->
       <div class="sm-row lyric-filter-row">
         <span class="sm-row-label">歌词过滤</span>
@@ -1267,7 +1252,6 @@ function showTab(tab){
   }else if(tab==='lyrics'){
     smLyrics.classList.add('active');
     document.getElementById('sm-btn-lyrics').classList.add('active');
-    updateLyricsSource();
   }else if(tab==='settings'){
     smSettings.classList.add('active');
     document.getElementById('sm-btn-settings').classList.add('active');
@@ -1343,24 +1327,8 @@ document.getElementById('sm-artist').onclick=function(){
 // 歌词按钮 - 切换歌词子页面
 var smLyrics=document.getElementById('sm-lyrics');
 var smInfo=document.querySelector('.sm-info');
-function updateLyricsSource(){
-  var badge=document.getElementById('sm-source-badge');
-  if(S.track&&S.track.sourceType==='webdav'){
-    badge.textContent=S.track.lyricSource==='embedded'?'歌曲内嵌':'酷狗音乐';
-  }else{
-    badge.textContent='酷狗音乐';
-  }
-}
 document.getElementById('sm-btn-lyrics').onclick=function(){
   showTab('lyrics');
-};
-// 歌词刷新
-document.getElementById('sm-lyrics-refresh').onclick=function(){
-  sendCmd('refresh-lyrics');
-};
-// 歌词在线匹配
-document.getElementById('sm-lyrics-match').onclick=function(){
-  sendCmd('match-lyrics');
 };
 // 设置按钮 - 切换设置子页面
 var smSettings=document.getElementById('sm-settings');
