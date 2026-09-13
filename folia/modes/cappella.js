@@ -1435,10 +1435,17 @@
         rowEl.style.transform = Anim.transformStr({ y: motionConfig.rowEnterY, scale: motionConfig.rowEnterScale })
         requestAnimationFrame(function () {
           if (!rowEl.isConnected) return
-          Anim.animateProps(rowEl, {
+          var enterAnim = Anim.animateProps(rowEl, {
             opacity: { from: 0, to: 1 },
             transform: { from: { y: motionConfig.rowEnterY, scale: motionConfig.rowEnterScale }, to: { y: 0, scale: 1 } }
           }, { duration: motionConfig.rowEnterDuration, ease: 'easeOut' })
+          // 进场结束后把终态落回 inline：opacity 的 inline 值此前是 '0'，
+          // 终态一直靠 fill:'forwards' 维持，动画一旦被取消行会立即隐形
+          enterAnim.finished.then(function () {
+            if (!rowEl.isConnected) return
+            rowEl.style.opacity = '1'
+            rowEl.style.transform = 'none'
+          }).catch(function () { /* 动画被取消（退场）时忽略 */ })
         })
       }
 
@@ -1450,6 +1457,13 @@
       rows.delete(rec.id)
       var el = rec.el
       var motionConfig = intensityConfig.motion
+
+      // FLIP 是独立追踪的动画（不在 __foliaAnims 里），退场前需手动取消，避免残留 fill 动画
+      var existing = el.__foliaSingleAnims || {}
+      if (existing.flipTransform) {
+        try { existing.flipTransform.cancel() } catch (error) { /* 忽略 */ }
+        existing.flipTransform = null
+      }
 
       // popLayout：绝对定位钉在当前位置，不再占据布局空间
       var top = el.offsetTop
@@ -1610,15 +1624,31 @@
       presenceInitialized = true
 
       // FLIP：布局变化后把留流行弹回原视觉位置（近似原版 layout="position" 位移弹簧）
+      // 注意：这里不能走 Anim.animateProps——它会先 cancelAnimations(rowEl)，
+      // 把进场动画（fill:'forwards'）一并取消，行的 opacity 立即回退到
+      // createRow 时写入的 inline '0'，导致清屏后所有留流行集体隐形
+      // （表现为"清屏后只剩最新一条消息"）。改用 __foliaSingleAnims 独立追踪
+      // transform 动画，与 animateGroupMotion 的 marginTop 通道同模式。
       if (snapshots) {
         rows.forEach(function (rec, id) {
           var snapshot = snapshots.get(id)
           if (snapshot === undefined) return
           var delta = snapshot - rec.el.offsetTop
           if (Math.abs(delta) > 0.5) {
-            Anim.animateProps(rec.el, {
-              transform: { from: { y: delta }, to: { y: 0 } }
-            }, { type: 'spring', stiffness: 500, damping: 40 })
+            var sim = Anim.simulateSpring({ stiffness: 500, damping: 40 })
+            var frames = []
+            for (var k = 0; k < sim.values.length; k += 1) {
+              frames.push(Anim.transformStr({ y: delta * (1 - sim.values[k]) }))
+            }
+            var existing = rec.el.__foliaSingleAnims || {}
+            if (existing.flipTransform) { try { existing.flipTransform.cancel() } catch (error) { /* 忽略 */ } }
+            var animation = rec.el.animate(
+              { transform: frames },
+              { duration: Math.round(sim.duration * 1000), easing: 'linear', fill: 'forwards' }
+            )
+            existing.flipTransform = animation
+            rec.el.__foliaSingleAnims = existing
+            animation.finished.catch(function () { /* 被替换或退场取消时忽略 */ })
           }
         })
       }
