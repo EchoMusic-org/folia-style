@@ -149,6 +149,14 @@
           </div>
         </div>
       </div>
+      <!-- 网页背景 URL 管理（仅 url 背景时显示） -->
+      <div class="url-bg-panel" id="url-bg-panel">
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="text" id="url-bg-input" class="lyric-filter-input" placeholder="输入网页地址，如 https://example.com" spellcheck="false">
+          <button class="sm-mini-btn" id="url-bg-add-btn" type="button" title="添加网页背景" style="flex-shrink:0">＋</button>
+        </div>
+        <div class="url-bg-list" id="url-bg-list"></div>
+      </div>
       <!-- 每首歌随机动画开关 -->
       <div class="sm-row">
         <span class="sm-row-label">每首歌随机动画</span>
@@ -428,7 +436,7 @@ async function switchToMode(id){
   switchingMode=false;
 }
 
-// url 网页背景配置：URL 列表存于 localStorage（[{id,url,note}] + 选中 id），设置菜单暂不提供编辑 UI
+// url 网页背景配置：URL 列表存于 localStorage（[{id,url,note}] + 选中 id），设置菜单提供编辑 UI
 function urlBgConfig(){
   var items=[];
   var selectedId=null;
@@ -436,8 +444,109 @@ function urlBgConfig(){
     items=JSON.parse(localStorage.getItem('folia-urlBackgrounds')||'[]')||[];
     selectedId=localStorage.getItem('folia-urlBackgroundSelected')||null;
   }catch(e){}
+  if(!Array.isArray(items))items=[];
   return{items:items,selectedId:selectedId};
 }
+
+// ===== 网页背景 URL 管理（设置菜单 url-bg-panel） =====
+function saveUrlBgConfig(items,selectedId){
+  try{
+    localStorage.setItem('folia-urlBackgrounds',JSON.stringify(items||[]))
+    if(selectedId)localStorage.setItem('folia-urlBackgroundSelected',selectedId)
+    else localStorage.removeItem('folia-urlBackgroundSelected')
+  }catch(e){console.warn('[Folia] 保存网页背景配置失败',e)}
+}
+// url 背景下重建背景实例：switchBackground 幂等（同 id 不重配 config），改配置后需销毁重建才生效
+function refreshUrlBackground(){
+  if(backgroundMode!=='url')return
+  window.FoliaBackgrounds.destroyActive()
+  activeBg=null
+  switchToBackground('url')
+}
+// 选中态规则与 url.js applySelected 一致：selectedId 匹配项优先，否则第一项
+function activeUrlBgId(cfg){
+  if(cfg.selectedId){
+    for(var i=0;i<cfg.items.length;i++){
+      if(cfg.items[i].id===cfg.selectedId)return cfg.selectedId
+    }
+  }
+  return cfg.items.length?cfg.items[0].id:null
+}
+function renderUrlBgPanel(){
+  var panel=document.getElementById('url-bg-panel')
+  var list=document.getElementById('url-bg-list')
+  if(!panel||!list)return
+  var show=backgroundMode==='url'
+  panel.classList.toggle('active',show)
+  if(!show){list.innerHTML='';return}
+  var cfg=urlBgConfig()
+  var activeId=activeUrlBgId(cfg)
+  var html=''
+  for(var i=0;i<cfg.items.length;i++){
+    var item=cfg.items[i]
+    // url 为用户自由输入，属性值需额外转义引号（escapeHtml 只处理 & < >）
+    html+='<div class="url-bg-item'+(item.id===activeId?' active':'')+'" data-id="'+escapeHtml(item.id)+'">'
+    html+='<span class="url-bg-item-url" title="'+escapeHtml(item.url).replace(/"/g,'&quot;')+'">'+escapeHtml(item.url)+'</span>'
+    html+='<button class="url-bg-item-del" data-del="'+escapeHtml(item.id)+'" title="删除">×</button>'
+    html+='</div>'
+  }
+  list.innerHTML=html||'<div style="font-size:11px;color:rgba(255,255,255,0.3)">暂无网页，先在上方输入地址添加</div>'
+  var items=list.querySelectorAll('.url-bg-item')
+  for(var j=0;j<items.length;j++){
+    items[j].addEventListener('click',function(e){
+      if(e.target.classList&&e.target.classList.contains('url-bg-item-del'))return
+      var id=this.getAttribute('data-id')
+      var cfg2=urlBgConfig()
+      saveUrlBgConfig(cfg2.items,id)
+      renderUrlBgPanel()
+      refreshUrlBackground()
+    })
+  }
+  var dels=list.querySelectorAll('.url-bg-item-del')
+  for(var k=0;k<dels.length;k++){
+    dels[k].addEventListener('click',function(e){
+      e.stopPropagation()
+      var id=this.getAttribute('data-del')
+      var cfg3=urlBgConfig()
+      var next=[]
+      for(var m=0;m<cfg3.items.length;m++){
+        if(cfg3.items[m].id!==id)next.push(cfg3.items[m])
+      }
+      saveUrlBgConfig(next,cfg3.selectedId===id?null:cfg3.selectedId)
+      renderUrlBgPanel()
+      refreshUrlBackground()
+    })
+  }
+}
+function addUrlBgItem(){
+  var input=document.getElementById('url-bg-input')
+  var url=String(input&&input.value||'').trim()
+  if(!url)return
+  // 清洗引号/尖括号（合法 URL 不含这些字符，且避免污染 HTML 属性）
+  url=url.replace(/["'<>]/g,'')
+  if(!url)return
+  // 无协议前缀时自动补 https://，避免 iframe 解析为相对路径失效
+  if(!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(url))url='https://'+url
+  var cfg=urlBgConfig()
+  var selectedId=activeUrlBgId(cfg)
+  var exists=false
+  for(var i=0;i<cfg.items.length;i++){
+    if(cfg.items[i].url===url){exists=true;selectedId=cfg.items[i].id;break}
+  }
+  if(!exists){
+    var item={id:'u'+Date.now(),url:url,note:''}
+    cfg.items.push(item)
+    selectedId=item.id
+  }
+  saveUrlBgConfig(cfg.items,selectedId)
+  if(input)input.value=''
+  renderUrlBgPanel()
+  refreshUrlBackground()
+}
+document.getElementById('url-bg-add-btn').addEventListener('click',addUrlBgItem)
+document.getElementById('url-bg-input').addEventListener('keydown',function(e){
+  if(e.key==='Enter'){e.preventDefault();addUrlBgItem()}
+})
 
 // 切换背景（6 种，经 FoliaBackgrounds 调度）
 async function switchToBackground(mode){
@@ -853,6 +962,7 @@ function toggleSettings(){
   if(settingsOpen){
     updateSettingsInfo();
     showTab(lastActiveTab); // 恢复上次的标签页
+    renderUrlBgPanel(); // 网页背景 URL 列表按最新 localStorage 状态渲染
   }
   // 关闭时不重置标签页状态，保留 lastActiveTab
 }
@@ -1124,6 +1234,8 @@ function syncBackgroundUI(){
   var bgOpt=document.querySelector('#folia-bg-popup .sm-anim-option[data-val="'+backgroundMode+'"]');
   if(bgOpt)bgBtn.textContent=bgOpt.textContent;
   bgOptions.forEach(function(o){o.classList.toggle('selected',o.getAttribute('data-val')===backgroundMode)});
+  // 网页背景的 URL 管理面板显隐与列表跟随背景模式刷新
+  renderUrlBgPanel();
 }
 bgBtn.onclick=function(e){e.stopPropagation();toggleBgPopup()};
 bgOptions.forEach(function(opt){
