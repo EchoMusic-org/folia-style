@@ -331,12 +331,59 @@ function createPlayerFrame(ctx, closeOverlay) {
       }
 
       // 构造宿主控制能力 payload
-      const buildHostControlsPayload = () => ({
-        platform: String(window.electron?.platform || ''),
-        showFullscreenButton:
-          (ctx.stores.settings || ctx.settings)?.showFullscreenButton !== false,
-        canShowMiniPlayer: typeof window.electron?.miniPlayer?.show === 'function',
-      })
+      const buildHostControlsPayload = () => {
+        // 平台统一小写，便于 iframe 侧判断（darwin/win32/linux）。
+        const platform = String(window.electron?.platform || '').toLowerCase()
+        // 宿主 >=2.3.2-beta.2 在 Windows/Linux 使用原生 titleBarOverlay 窗口按钮，右上角由系统绘制，
+        // 若 iframe 再自绘最小化/最大化/关闭会与原生按钮重叠；据此字段让插件跳过这些自绘按钮。
+        const overlay = window.navigator?.windowControlsOverlay
+        const nativeWindowControls = platform !== 'darwin' && !!overlay && overlay.visible === true
+        // 读取宿主为原生窗口按钮预留的右侧安全区宽度（preload 写入 documentElement 的 CSS 变量）。
+        let windowControlsInset = 0
+        try {
+          windowControlsInset =
+            Number.parseFloat(
+              getComputedStyle(document.documentElement).getPropertyValue('--window-controls-inset'),
+            ) || 0
+        } catch (error) {
+          windowControlsInset = 0
+        }
+        return {
+          platform,
+          showFullscreenButton:
+            (ctx.stores.settings || ctx.settings)?.showFullscreenButton !== false,
+          canShowMiniPlayer: typeof window.electron?.miniPlayer?.show === 'function',
+          nativeWindowControls,
+          windowControlsInset,
+        }
+      }
+
+      // 原生窗口按钮的预留宽度会随缩放、全屏、DPI 变化，需在窗口几何变化后重新下发给 iframe 重装按钮。
+      let hostControlsRefreshTimer = null
+      const pushHostControls = () => {
+        if (disposed || !ready) return
+        postToFrame({
+          type: 'echo-folia:host-controls',
+          payload: buildHostControlsPayload(),
+        })
+      }
+      const scheduleHostControlsRefresh = () => {
+        if (hostControlsRefreshTimer) clearTimeout(hostControlsRefreshTimer)
+        hostControlsRefreshTimer = setTimeout(pushHostControls, 150)
+      }
+      const bindHostControlsRefresh = () => {
+        window.addEventListener('resize', scheduleHostControlsRefresh)
+        // WCO 在标题栏区几何变化（缩放/全屏/DPI）时派发 geometrychange，是最准确的刷新信号。
+        window.navigator?.windowControlsOverlay?.addEventListener?.('geometrychange', scheduleHostControlsRefresh)
+      }
+      const unbindHostControlsRefresh = () => {
+        if (hostControlsRefreshTimer) {
+          clearTimeout(hostControlsRefreshTimer)
+          hostControlsRefreshTimer = null
+        }
+        window.removeEventListener('resize', scheduleHostControlsRefresh)
+        window.navigator?.windowControlsOverlay?.removeEventListener?.('geometrychange', scheduleHostControlsRefresh)
+      }
 
       // 获取宿主歌词字体设置
       const buildAppearancePayload = () => {
@@ -737,6 +784,7 @@ function createPlayerFrame(ctx, closeOverlay) {
         initVolumeWatch()
         initFontWatch()
         startPositionHeartbeat()
+        bindHostControlsRefresh()
 
         try {
           spectrumDispose = ctx.audio.spectrum.subscribe(
@@ -767,6 +815,7 @@ function createPlayerFrame(ctx, closeOverlay) {
         document.body.classList.remove('folia-overlay-open')
         window.removeEventListener('message', handleMessage)
         window.removeEventListener('keydown', handleKeydown, true)
+        unbindHostControlsRefresh()
         stopPositionHeartbeat()
         if (lyricStoreUnsub) lyricStoreUnsub()
         lyricStoreUnsub = null

@@ -102,7 +102,8 @@ folia/
 所有消息带 `source` 字段区分方向；宿主发 `echo-folia-parent`，iframe 发 `echo-folia-child`。
 
 宿主 → iframe（`index.js` 中 `postToFrame`）：
-- `echo-folia:init`：iframe ready 后一次，携带 `pluginVersion / hostControls / settings(动画模式+强度)`
+- `echo-folia:init`：iframe ready 后一次，携带 `pluginVersion / hostControls(含 nativeWindowControls/windowControlsInset) / settings(动画模式+强度)`
+- `echo-folia:host-controls`：宿主窗口能力变更（缩放/全屏等导致原生按钮预留宽度变化）时重推，iframe 据此重装右上角窗口控制按钮；宿主 >=2.3.2-beta.2 在 Windows/Linux 用原生 `titleBarOverlay` 按钮，插件据此不再自绘最小化/最大化/关闭，并把 mini+全屏 右移 `windowControlsInset` 避开原生按钮
 - `echo-folia:snapshot`：完整状态（track / queue / playMode / isFavorited / coverBlur / lyric.currentIndex 等），命令执行后与曲目/音量变化会强制重推
 - `echo-folia:lyrics`：归一化后的歌词行（毫秒；characters 逐字时间轴同为毫秒），带 dedupe key
 - `echo-folia:position`：`{position_ms, duration_ms, is_playing, cause}`，5 秒心跳 + 事件驱动

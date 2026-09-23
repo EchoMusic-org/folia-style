@@ -676,11 +676,15 @@ function sendCmd(cmd,extra){
 var hostPlatform='';
 var hostCanMiniPlayer=false;
 var hostShowFullscreen=true;
+var hostNativeControls=false;
+var hostControlsInset=0;
 
 function createWindowControls(){
   var container=document.getElementById('win-controls');
   container.innerHTML='';
   var isMac=hostPlatform==='darwin';
+  // 宿主是否以系统原生按钮接管右上角（>=2.3.2-beta.2 的 Windows/Linux）。
+  var hostsNative=hostNativeControls===true;
   // mini 模式按钮 (picture-in-picture)
   if(hostCanMiniPlayer){
     var btn=document.createElement('button');
@@ -691,13 +695,7 @@ function createWindowControls(){
   }
   // macOS 不渲染系统窗口按钮
   if(!isMac){
-    // 最小化 (minus)
-    var btn=document.createElement('button');
-    btn.className='win-btn';btn.title='最小化';
-    btn.innerHTML='<svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>';
-    btn.onclick=function(){sendCmd('window-control',{action:'minimize'})};
-    container.appendChild(btn);
-    // 全屏 (arrows-maximize)
+    // 全屏 (arrows-maximize)：宿主自绘全屏按钮会被本覆盖层遮挡，需由插件继续提供。
     if(hostShowFullscreen){
       var btn=document.createElement('button');
       btn.className='win-btn';btn.title='全屏';
@@ -705,19 +703,31 @@ function createWindowControls(){
       btn.onclick=function(){sendCmd('window-control',{action:'fullscreen'})};
       container.appendChild(btn);
     }
-    // 最大化 (square)
-    var btn=document.createElement('button');
-    btn.className='win-btn';btn.title='最大化';
-    btn.innerHTML='<svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
-    btn.onclick=function(){sendCmd('window-control',{action:'maximize'})};
-    container.appendChild(btn);
-    // 关闭 (x)
-    var btn=document.createElement('button');
-    btn.className='win-btn win-btn--close';btn.title='关闭';
-    btn.innerHTML='<svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
-    btn.onclick=function(){sendCmd('window-control',{action:'close'})};
-    container.appendChild(btn);
+    // 宿主使用原生窗口按钮时，最小化/最大化/关闭由系统绘制，插件不再自绘，避免与右上角原生按钮重叠。
+    if(!hostsNative){
+      // 最小化 (minus)
+      var btn=document.createElement('button');
+      btn.className='win-btn';btn.title='最小化';
+      btn.innerHTML='<svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>';
+      btn.onclick=function(){sendCmd('window-control',{action:'minimize'})};
+      container.appendChild(btn);
+      // 最大化 (square)
+      var btn=document.createElement('button');
+      btn.className='win-btn';btn.title='最大化';
+      btn.innerHTML='<svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+      btn.onclick=function(){sendCmd('window-control',{action:'maximize'})};
+      container.appendChild(btn);
+      // 关闭 (x)
+      var btn=document.createElement('button');
+      btn.className='win-btn win-btn--close';btn.title='关闭';
+      btn.innerHTML='<svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+      btn.onclick=function(){sendCmd('window-control',{action:'close'})};
+      container.appendChild(btn);
+    }
   }
+  // 始终显式设置右边界（#win-controls 为静态节点、复用不重建，须每次显式覆盖，避免残留上次偏移）：
+  // 有系统原生按钮时右移其预留宽度避让；原生按钮隐藏（如全屏、WCO 不可见）时归位 0，动态跟随不留空白。
+  container.style.right=(hostsNative&&hostControlsInset>0)?(hostControlsInset+'px'):'0px';
 }
 
 window.addEventListener('message',function(ev){
@@ -729,6 +739,8 @@ window.addEventListener('message',function(ev){
       hostPlatform=String(init.hostControls?.platform||'').toLowerCase();
       hostCanMiniPlayer=Boolean(init.hostControls?.canShowMiniPlayer);
       hostShowFullscreen=init.hostControls?.showFullscreenButton!==false;
+      hostNativeControls=init.hostControls?.nativeWindowControls===true;
+      hostControlsInset=Number(init.hostControls?.windowControlsInset)||0;
       createWindowControls();
       // 应用宿主端保存的设置
       if(init.settings){
@@ -758,6 +770,15 @@ window.addEventListener('message',function(ev){
       if(init.lyricFontFamily){
         applyLyricFontFamily(init.lyricFontFamily);
       }
+      break;
+    case'echo-folia:host-controls':
+      var hc=d.payload||{};
+      hostPlatform=String(hc.platform||'').toLowerCase();
+      hostCanMiniPlayer=Boolean(hc.canShowMiniPlayer);
+      hostShowFullscreen=hc.showFullscreenButton!==false;
+      hostNativeControls=hc.nativeWindowControls===true;
+      hostControlsInset=Number(hc.windowControlsInset)||0;
+      createWindowControls();
       break;
     case'echo-folia:snapshot':
       var snap=d.payload;
