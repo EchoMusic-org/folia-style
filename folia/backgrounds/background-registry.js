@@ -8,11 +8,11 @@
 
   var MODES = [
     { id: 'common', label: '通用', file: ['backgrounds/common.js'], globalName: 'FoliaBgCommon', order: 10 },
-    { id: 'latent', label: 'Latent', file: ['backgrounds/latent.js'], globalName: 'FoliaBgLatent', order: 20 },
-    { id: 'monet', label: '莫奈', file: ['backgrounds/monet-bg.js'], globalName: 'FoliaBgMonet', order: 30 },
-    { id: 'nomand', label: 'Nomand', file: ['backgrounds/nomand.js'], globalName: 'FoliaBgNomand', order: 40 },
-    { id: 'sora', label: '星野', file: ['backgrounds/sora.js'], globalName: 'FoliaBgSora', vendor: ['twgl'], order: 50 },
-    { id: 'url', label: '网页', file: ['backgrounds/url.js'], globalName: 'FoliaBgUrl', order: 60 }
+    { id: 'monet', label: '莫奈', file: ['backgrounds/monet-bg.js'], globalName: 'FoliaBgMonet', order: 20 },
+    { id: 'nomand', label: '漫游', file: ['backgrounds/nomand.js'], globalName: 'FoliaBgNomand', vendor: ['paperShaders'], order: 30 },
+    { id: 'latent', label: '隐现', file: ['backgrounds/latent.js'], globalName: 'FoliaBgLatent', vendor: ['paperShaders'], order: 35 },
+    { id: 'url', label: '网页', file: ['backgrounds/url.js'], globalName: 'FoliaBgUrl', order: 40 },
+    { id: 'sora', label: '星野', file: ['backgrounds/sora.js'], globalName: 'FoliaBgSora', vendor: ['twgl'], order: 50 }
   ]
 
   var loadedScripts = {}
@@ -42,7 +42,8 @@
 
   async function loadVendor(names) {
     var VENDOR = {
-      twgl: { file: 'vendor/twgl-full.min.js', check: function () { return window.twgl } }
+      twgl: { file: 'vendor/twgl-full.min.js', check: function () { return window.twgl } },
+      paperShaders: { file: 'vendor/paper-shaders.iife.js', check: function () { return window.PaperShaders } }
     }
     for (var i = 0; i < names.length; i += 1) {
       var lib = VENDOR[names[i]]
