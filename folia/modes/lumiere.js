@@ -1,29 +1,30 @@
-// 商籁（sonnet）模式入口：移植自 folia-major src/components/visualizer/sonnet/
-//   VisualizerSonnet.tsx（React 包装）+ songHandover.ts + pixiRuntimeHost.ts
+// 绘光（lumiere）模式入口：移植自 folia-major src/components/visualizer/lumiere/
+//   VisualizerLumiere.tsx（React 包装）+ songHandover.ts + pixiRuntimeHost.ts
 //   → 原生 JS 模式接口（mount/setTheme/setLines/setFontScale/tick/destroy）。
 // React 对应关系：
 //   useState/useRef → 闭包变量；useMemo（program）→ 按签名惰性编译缓存；
-//   MotionValue.get/useMotionValueEvent → tick 里读 frameState 并注入运行时；
+//   MotionValue（currentTime/audioPower/audioBands）→ { get() } 鸭子对象，闭包变量现读；
 //   useVisualizerSongCommit（已提交歌曲滞后门）→ 简化为"歌词签名 + 2 秒确认纯音乐"；
-//   VisualizerSubtitleOverlay → window.FoliaSubtitleOverlay。
-// 运行时模块：window.FoliaSonnetRuntime（Pixi 生命周期 + 逐帧更新）。
+//   VisualizerSubtitleOverlay → window.FoliaSubtitleOverlay；
+//   LumiereSettingsPanel → 不移植（本插件无 per-mode 设置面板），固定 DEFAULT_LUMIERE_TUNING。
+// 运行时模块：window.FoliaLumiereScene.LumierePixiRuntime（Pixi 生命周期 + 逐帧更新）。
 (function () {
   'use strict'
 
-  var Core = window.FoliaSonnetCore
-  var Program = window.FoliaSonnetProgram
-  var RuntimeFactory = window.FoliaSonnetRuntime
+  var Core = window.FoliaLumiereCore
+  var Program = window.FoliaLumiereProgram
+  var Scene = window.FoliaLumiereScene
   var RenderHints = window.FoliaRenderHints
   var VisualizerRuntime = window.FoliaVisualizerRuntime
 
-  // 调制乘数表（原版 K3Panel mods；本插件无调制 UI，恒空 → mod() 回退 1）
-  var MODULATION = undefined
+  // 本插件无模式设置面板，tuning 固定默认值（原版默认开启无缝过渡与全部装饰层）
+  var TUNING = Core.DEFAULT_LUMIERE_TUNING
 
   function createMode() {
     var host = null            // 宿主元素（registry 传入）
     var layerEl = null         // 模式根层（inset 0 / z-10 / overflow hidden）
     var pixiHost = null        // Pixi canvas 宿主
-    var fallbackEl = null      // 段落为空时的文字兜底
+    var fallbackEl = null      // 运行时失败时的文字兜底
     var runtime = null
     var runtimeFailed = false
     var creating = false
@@ -36,28 +37,39 @@
     var isPlaying = false
     var showText = true
     var fontScale = 1
-    var tuning = Core.DEFAULT_SONNET_TUNING
     var songTitle = null
     var songArtist = null
     var songAlbum = null
+    var audioPower = 0
+    var audioBands = { bass: 0, lowMid: 0, mid: 0, vocal: 0, treble: 0 }
 
     // 已提交歌曲（屏幕上实际呈现的 { seed, program, theme }）
     var committed = { seed: '', program: null, theme: null }
     var swapInFlight = false
 
-    // 程序编译缓存（等价原版 useMemo([programLines, committedSeed])）
+    // 程序编译缓存（等价原版 useMemo([committedLines, committedSeed, seamlessTransitions])）
     var programCache = { key: null, program: null }
 
-    // 纯音乐检测（原版 useVisualizerSongCommit 的 2 秒确认窗口）
+    // 纯音乐检测（原版 useVisualizerSongCommit 的 3 秒就绪窗口，简化为 2 秒确认）
     var lyricsSeen = false
-    var virtualLinesCache = null
-    var virtualKey = null
 
     var lastPaused = false
     var lastPausedTime = -1
     var lastMetadata = { title: null, artist: null, album: null }
+    var lastShowText = true
 
-    // ---------- 歌词签名（原版 getLyricsSignature 的简化版） ----------
+    // MotionValue 鸭子源（{ get(): value }）：运行时 ticker 每帧现读，无需逐帧推送
+    var currentTimeSource = { get: function () { return currentTime } }
+    var audioPowerSource = { get: function () { return audioPower } }
+    var audioBandsSource = {
+      bass: { get: function () { return audioBands.bass } },
+      lowMid: { get: function () { return audioBands.lowMid } },
+      mid: { get: function () { return audioBands.mid } },
+      vocal: { get: function () { return audioBands.vocal } },
+      treble: { get: function () { return audioBands.treble } }
+    }
+
+    // ---------- 歌词签名（切歌检测的简化版） ----------
     function lyricsSignature(list) {
       if (!list || list.length === 0) return ''
       return list.length + '|' + (list[0].fullText || '') + '|' + (list[list.length - 1].fullText || '')
@@ -67,7 +79,7 @@
     function resolveSeed() {
       var title = songTitle || ''
       var artist = songArtist || ''
-      if (!title && !artist) return 'sonnet'
+      if (!title && !artist) return 'lumiere'
       return title + '|' + artist
     }
 
@@ -77,49 +89,26 @@
       return currentTime > 2
     }
 
-    function getVirtualLines() {
-      var key = 'virtual'
-      if (virtualLinesCache && virtualKey === key) return virtualLinesCache
-      var generated = []
-      for (var i = 0; i < 60; i++) {
-        generated.push({
-          id: 'virtual-staff-' + i,
-          startTime: i * 8,
-          endTime: i * 8 + 6,
-          fullText: '♪',
-          words: [],
-          isChorus: false
-        })
-      }
-      virtualLinesCache = generated
-      virtualKey = key
-      return generated
-    }
-
-    // ---------- 程序编译（等价 useMemo） ----------
-    function compileProgramLines(programLines, seed) {
-      var key = seed + '::' + lyricsSignature(programLines)
+    // ---------- 程序编译（等价 useMemo）----------
+    // 源码语义：纯音乐 / 歌词还没到 → 编译成只有间奏镜头的程序（lines 传空），
+    // showText 关掉时仍按真实歌词编译，镜头节奏跟着歌走，只是不画字（setShowText）。
+    function compileProgram() {
+      var programLines = resolveInstrumental() ? [] : lines
+      var key = resolveSeed() + '::' + lyricsSignature(programLines)
       if (programCache.key === key && programCache.program) return programCache.program
-      var program = Program.compileSonnetProgram(programLines, seed)
+      var program = Program.compileLumiereProgram(
+        programLines,
+        resolveSeed(),
+        {},
+        Program.resolveLumiereCompileOptions({ seamlessTransitions: TUNING.seamlessTransitions })
+      )
       programCache = { key: key, program: program }
       return program
     }
 
     // 当前"应显示"的歌曲上下文（对应原版 songContext useMemo）
     function resolveSongContext() {
-      var instrumental = resolveInstrumental()
-      var programLines
-      if (!showText) {
-        programLines = []
-      } else if (lines.length > 0) {
-        programLines = lines
-      } else if (instrumental) {
-        programLines = getVirtualLines()
-      } else {
-        programLines = []
-      }
-      var program = compileProgramLines(programLines, resolveSeed())
-      return { seed: resolveSeed(), program: program, theme: theme }
+      return { seed: resolveSeed(), program: compileProgram(), theme: theme }
     }
 
     function sameSong(a, b) {
@@ -141,20 +130,17 @@
       var song = resolveSongContext()
       if (!song.theme) return
       creating = true
-      RuntimeFactory.SonnetPixiRuntime.create({
+      Scene.LumierePixiRuntime.create({
         host: pixiHost,
-        songSeed: song.seed,
-        program: song.program,
-        theme: song.theme,
-        tuning: tuning,
-        lyricsFontScale: fontScale,
+        song: song,
+        tuning: TUNING,
+        currentTime: currentTimeSource,
+        audioPower: audioPowerSource,
+        audioBands: audioBandsSource,
         staticMode: false,
-        transparentBackground: false,
+        showText: showText,
         paused: !isPlaying,
-        songTitle: songTitle,
-        songArtist: songArtist,
-        songAlbum: songAlbum,
-        modulation: MODULATION
+        metadata: { title: songTitle, artist: songArtist, album: songAlbum }
       }).then(function (instance) {
         if (destroyed) {
           instance.destroy()
@@ -163,24 +149,26 @@
         runtime = instance
         creating = false
         runtimeFailed = false
-        // 创建期间歌/主题可能已变：补一次元数据同步，并以暂停态启动。
-        // setPaused 后必须同步 lastPaused 记账：创建回调可能早于首次 tick 执行（此时 isPlaying
-        // 仍是初始 false），不记账会导致 tick 的差量判断永远不再调 setPaused → 渲染一帧后卡住。
-        runtime.setSongMetadata({ title: songTitle, artist: songArtist, album: songAlbum })
+        // 创建期间歌/主题可能已变：补一次状态同步。
+        // 必须同步差量记账（lastPaused/lastShowText/lastMetadata）：创建回调可能早于首次 tick 执行，
+        // 此时 isPlaying 仍是初始 false，runtime 会被置为暂停态；若不记账，tick 的差量判断认为
+        // "上次已同步为播放中"，永远不会调 setPaused(false) → 渲染一帧后卡住。
+        lastMetadata = { title: songTitle, artist: songArtist, album: songAlbum }
+        runtime.setSongMetadata(lastMetadata)
+        lastShowText = showText
+        runtime.setShowText(showText)
         lastPaused = !isPlaying
         runtime.setPaused(!isPlaying)
-        if (song) {
-          committed = song
-          if (!sameSong(resolveSongContext(), song)) applySong()
-        }
+        committed = song
+        if (!sameSong(resolveSongContext(), song)) applySong()
       }).catch(function (error) {
         creating = false
         runtimeFailed = true
-        console.error('[folia-style] Sonnet runtime 创建失败:', error)
+        console.error('[folia-style] Lumiere runtime 创建失败:', error)
       })
     }
 
-    // 歌曲交接（等价 swap 排空循环）：等待上一次溶解完成后再排队下一次
+    // 歌曲交接（等价 swap 排空循环）：等待上一次交接完成后再排队下一次
     function applySong() {
       if (destroyed) return
       var next = resolveSongContext()
@@ -195,29 +183,31 @@
         swapInFlight = false
         committed = next
         if (destroyed) return
-        // 溶解期间状态又变了 → 继续排队
+        // 交接期间状态又变了 → 继续排队
         if (!sameSong(resolveSongContext(), committed)) applySong()
       }).catch(function (error) {
         swapInFlight = false
         committed = next
-        console.error('[folia-style] Sonnet 歌曲交接失败:', error)
+        console.error('[folia-style] Lumiere 歌曲交接失败:', error)
       })
     }
 
-    // fontScale 变化触发重建（原版 rebuildKey 包含 lyricsFontScale）
-    function rebuildRuntime() {
-      if (runtime) {
-        var old = runtime
-        runtime = null
-        swapInFlight = false
-        old.destroy()
-      }
-      ensureRuntime()
+    // ---------- 文字兜底（原版 runtimeFailed 时的居中提示） ----------
+    function updateFallbackStyle() {
+      if (!fallbackEl) return
+      var color = theme ? theme.primaryColor : '#f4f4f5'
+      var family = theme
+        ? (theme.fontFamily || window.foliaGetLyricFontFamily() || 'sans-serif')
+        : 'sans-serif'
+      var weight = theme && typeof theme.fontWeight === 'number' ? theme.fontWeight : 500
+      fallbackEl.style.color = color
+      fallbackEl.style.fontFamily = family
+      fallbackEl.style.fontWeight = String(weight)
+      fallbackEl.style.fontSize = 'clamp(2rem, ' + (5.4 * fontScale) + 'vw, 5.6rem)'
     }
 
-    // ---------- 文字兜底（原版 runtimeFailed || paragraphs 为空的居中提示） ----------
-    function updateFallback(activeLine, paragraphsCount) {
-      var show = runtimeFailed || paragraphsCount === 0
+    function updateFallback(activeLine) {
+      var show = runtimeFailed
       if (!show) {
         if (fallbackEl) fallbackEl.style.opacity = '0'
         return
@@ -235,7 +225,7 @@
       host = hostEl
 
       layerEl = document.createElement('div')
-      layerEl.className = 'folia-mode-sonnet'
+      layerEl.className = 'folia-mode-lumiere'
       layerEl.style.cssText = [
         'position:absolute', 'inset:0', 'z-index:10', 'overflow:hidden',
         'pointer-events:none'
@@ -245,7 +235,7 @@
       pixiHost.style.cssText = 'position:absolute;inset:0;z-index:10'
       pixiHost.setAttribute('aria-hidden', 'true')
 
-      // 段落为空/创建失败时的文字兜底（原版 Tailwind：flex 居中 + clamp 字号）
+      // 运行时失败时的文字兜底（原版 Tailwind：flex 居中 + clamp 字号）
       fallbackEl = document.createElement('div')
       fallbackEl.style.cssText = [
         'position:absolute', 'inset:0', 'display:flex', 'align-items:center', 'justify-content:center',
@@ -256,18 +246,6 @@
       layerEl.appendChild(pixiHost)
       layerEl.appendChild(fallbackEl)
       host.appendChild(layerEl)
-    }
-
-    function updateFallbackStyle() {
-      if (!fallbackEl) return
-      var color = theme ? theme.primaryColor : '#f4f4f5'
-      var family = theme ? Core.resolveThemeFontStack(theme) : 'sans-serif'
-      var weight = theme ? Core.resolveThemeFontWeight(theme, 600) : 600
-      var size = 'clamp(2rem, ' + (5.4 * fontScale) + 'vw, 5.6rem)'
-      fallbackEl.style.color = color
-      fallbackEl.style.fontFamily = family
-      fallbackEl.style.fontWeight = String(weight)
-      fallbackEl.style.fontSize = size
     }
 
     function setTheme(newTheme) {
@@ -282,23 +260,22 @@
       lines = newLines || []
     }
 
+    // 原版 rebuildKey 不含字体缩放：绘光的字号由文字窗口按画面高度占比计算，
+    // lyricsFontScale 只影响共享副字幕（FoliaSubtitleOverlay 内部处理），运行时无需重建。
     function setFontScale(scale) {
       var next = scale === undefined ? 1 : scale
       if (next === fontScale) return
       fontScale = next
       updateFallbackStyle()
-      rebuildRuntime()
     }
 
     function tick(frameState) {
       if (destroyed) return
 
       // 1. 吸收最新帧状态（MotionValue.get() 等价）
-      if (frameState.theme) {
-        if (theme !== frameState.theme) {
-          theme = frameState.theme
-          updateFallbackStyle()
-        }
+      if (frameState.theme && theme !== frameState.theme) {
+        theme = frameState.theme
+        updateFallbackStyle()
       }
       lines = frameState.lines || []
       if (lines.length > 0) lyricsSeen = true
@@ -309,18 +286,18 @@
       songTitle = frameState.songTitle !== undefined ? frameState.songTitle : songTitle
       songArtist = frameState.songArtist !== undefined ? frameState.songArtist : songArtist
       songAlbum = frameState.songAlbum !== undefined ? frameState.songAlbum : songAlbum
+      if (typeof frameState.audioPower === 'number') audioPower = frameState.audioPower
+      if (frameState.audioBands) audioBands = frameState.audioBands
 
-      // 2. 歌曲交接（换歌溶解 / 主题静默提交）
+      // 2. 歌曲交接（换歌场景交接 / 主题静默提交）
       applySong()
 
-      // 3. 播放状态注入 + 暂停行为（原版 setPaused / currentTime.on('change') renderOnce）
+      // 3. 播放状态注入（Pixi ticker 自驱动：setPaused 管 start/stop）
       if (runtime) {
-        runtime.setPlaybackState(
-          currentTime,
-          typeof frameState.audioPower === 'number' ? frameState.audioPower : 0,
-          frameState.audioBands || null
-        )
-        // 元数据同步（原版 useEffect [songAlbum, songArtist, songTitle] → setSongMetadata）
+        if (showText !== lastShowText) {
+          lastShowText = showText
+          runtime.setShowText(showText)
+        }
         if (songTitle !== lastMetadata.title || songArtist !== lastMetadata.artist || songAlbum !== lastMetadata.album) {
           lastMetadata = { title: songTitle, artist: songArtist, album: songAlbum }
           runtime.setSongMetadata(lastMetadata)
@@ -329,13 +306,15 @@
           lastPaused = !isPlaying
           runtime.setPaused(!isPlaying)
         }
+        // 暂停时 ticker 停着，拖动进度要手动补一帧
         if (!isPlaying && currentTime !== lastPausedTime) {
           lastPausedTime = currentTime
           runtime.renderOnce()
         }
       }
 
-      // 4. 字幕覆盖层（原版 useVisualizerRuntime + VisualizerSubtitleOverlay）
+      // 4. 字幕覆盖层（原版 useVisualizerRuntime + VisualizerSubtitleOverlay；
+      //    片尾卡出来以后不再在字幕里重复最后一句）
       var runtimeState = VisualizerRuntime.getRuntimeState({
         lines: lines,
         currentLineIndex: currentLineIndex,
@@ -356,8 +335,7 @@
       })
 
       // 5. 文字兜底
-      var program = committed.program || (runtime ? null : resolveSongContext().program)
-      updateFallback(runtimeState.activeLine, program ? program.paragraphs.length : 0)
+      updateFallback(runtimeState.activeLine)
     }
 
     function destroy() {
@@ -375,12 +353,11 @@
       fallbackEl = null
       host = null
       programCache = { key: null, program: null }
-      virtualLinesCache = null
       committed = { seed: '', program: null, theme: null }
     }
 
     return {
-      id: 'sonnet',
+      id: 'lumiere',
       mount: mount,
       setTheme: setTheme,
       setLines: setLines,
@@ -390,5 +367,5 @@
     }
   }
 
-  window.FoliaModeSonnet = { create: createMode }
+  window.FoliaModeLumiere = { create: createMode }
 })()

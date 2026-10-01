@@ -56,6 +56,23 @@
       'modes/tempera/tempera-runtime.js',
       'modes/tempera.js'
     ], globalName: 'FoliaModeTempera', vendor: ['pixi', 'pretext'], order: 20, majorId: 'tempera' },
+    // 绘光为大体量 Pixi 模式，拆分为 lumiere/ 目录下多个模块文件，按数组顺序加载
+    // （sonnet-core 前置：纹理池分辨率对齐工具，与凝彩同款先例
+    //   → core → 线稿 → 线稿图集 → 灯光 → 装置 → 文本排版 → 文本窗口 → 程序编译 → 片尾卡 → 场景运行时 → 入口）
+    { id: 'lumiere', legacyIds: [], label: '绘光', file: [
+      'modes/sonnet/sonnet-core.js',
+      'modes/lumiere/lumiere-core.js',
+      'modes/lumiere/lumiere-lineart.js',
+      'modes/lumiere/lumiere-diagrams.js',
+      'modes/lumiere/lumiere-light.js',
+      'modes/lumiere/lumiere-rigs.js',
+      'modes/lumiere/lumiere-text.js',
+      'modes/lumiere/lumiere-text-window.js',
+      'modes/lumiere/lumiere-program.js',
+      'modes/lumiere/lumiere-credits.js',
+      'modes/lumiere/lumiere-scene.js',
+      'modes/lumiere.js'
+    ], globalName: 'FoliaModeLumiere', vendor: ['pixi', 'pretext'], order: 25, majorId: 'lumiere' },
     { id: 'classic', legacyIds: ['liuguang'], label: '流光', file: 'modes/classic.js', globalName: 'FoliaModeClassic', vendor: [], order: 30, majorId: 'classic' },
     { id: 'cadenza', legacyIds: ['xinxiang'], label: '心象', file: 'modes/cadenza.js', globalName: 'FoliaModeCadenza', vendor: ['pretext'], order: 40, majorId: 'cadenza' },
     { id: 'partita', legacyIds: ['yunjie'], label: '云阶', file: 'modes/partita.js', globalName: 'FoliaModePartita', vendor: [], order: 50, majorId: 'partita' },

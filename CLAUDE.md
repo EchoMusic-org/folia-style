@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 插件的作用是替换宿主内置的歌词页——当宿主 `player.isLyricViewOpen` 变为 true 时，本插件挂载一个全屏覆盖层，在其中用 `<iframe>` 加载 `folia/bridge.html`（独立的可视化前端），通过 `postMessage` 与宿主双向通信。
 
-歌词动画体系是 **folia-major（React 项目）13 种歌词可视化模式的原生 JS 一比一复刻**（另含其 6 种背景系统与封面取色主题）。歌词数据不用原版的解析管线，而是沿用本插件现有获取方式：宿主 Pinia lyric store → `index.js` 归一化毫秒行 → postMessage → iframe 内适配为原版 Line 结构（秒）。
+歌词动画体系是 **folia-major（React 项目）14 种歌词可视化模式的原生 JS 一比一复刻**（另含其 6 种背景系统与封面取色主题）。歌词数据不用原版的解析管线，而是沿用本插件现有获取方式：宿主 Pinia lyric store → `index.js` 归一化毫秒行 → postMessage → iframe 内适配为原版 Line 结构（秒）。
 
 没有构建、没有测试、没有 lint 配置。所有 JS 都是运行时直接由宿主/浏览器执行的源码——修改后直接由 EchoMusic 加载即可，不需要打包。
 
@@ -37,8 +37,8 @@ folia/
     theme.js               # 封面取色主题链路（extractColors → 调色板分析 → 明暗五色主题 + 对比度求解）
     lyrics-data.js         # 行数据适配（宿主毫秒行 → 原版 Line 秒制 + renderHints 推导 + 行索引查找）
     subtitle-overlay.js    # 共享底部字幕（翻译/罗马音 + 下一句预览）
-    registry.js            # 13 种模式注册表（id/label/文件清单/vendor 懒加载/旧 id 映射）
-  modes/                 # 13 种模式；统一接口 create() → { id, mount, setTheme, setLines, setFontScale, tick(frameState), destroy }
+    registry.js            # 14 种模式注册表（id/label/文件清单/vendor 懒加载/旧 id 映射）
+  modes/                 # 14 种模式；统一接口 create() → { id, mount, setTheme, setLines, setFontScale, tick(frameState), destroy }
     classic.js liuguang 已并入  # 流光（原版 classic，逐词弹性 + 双层发光，默认模式）
     cadenza.js             # 心象（pretext 排版 + hero 强调 + 碰撞回避散落 + 指数平滑逐帧驱动）
     partita.js             # 云阶（分块 stagger + 引导线）
@@ -47,6 +47,7 @@ folia/
     monet.js               # 莫奈（海报人像 + 歌词 rail + 频谱，原版 ~3400 行转写）
     sonnet/ + sonnet.js    # 商籁（Pixi WebGL 日系文字 PV，15 文件 ~10600 行）
     tempera/ + tempera.js  # 凝彩（Pixi 色块拼贴，14 文件 ~9400 行，复用 sonnet-core/sonnet-filters）
+    lumiere/ + lumiere.js  # 绘光（Pixi 舞台灯光式歌词 PV，10 文件 ~9600 行，前置复用 sonnet-core 的纹理池工具；设置面板不移植，tuning 固定默认值）
     diorama/ + diorama.js  # 镜台（three.js 3D 歌词走廊，8 文件 ~5100 行）
     claddagh.js            # 回环（椭圆环投影 + spring 自转）
     pendolo-core.js + pendolo.js  # 时计（表盘弧形歌词 + 机芯 canvas）
