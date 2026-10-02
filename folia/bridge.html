@@ -304,6 +304,7 @@ var backgroundMode=localStorage.getItem('folia-backgroundMode')||'common'; // �
 var randomModePerSong=localStorage.getItem('folia-randomModePerSong')==='true'; // 每首歌随机动画
 var lastSongKeyForTheme=null;       // 主题取色去重（songKey）
 var lastSongKeyForRandom=null;      // 每歌随机去重
+var lastCoverForBg=null;            // 背景封面去重（切歌后推送 setCoverUrl）
 var lastFrameNow=0;                 // 帧间隔 dt 计算
 var activeMode=null;                // 当前模式实例（FoliaRegistry.switchMode 返回）
 var switchingMode=false;            // 模式切换中标记
@@ -596,8 +597,17 @@ function songKeyOf(){
   return S.track?(S.track.id||S.track.hash||null):null;
 }
 
-// 切歌处理：封面取色更新主题 + （开启时）每首歌随机动画模式
+// 切歌处理：封面变更推送背景 + 主题取色更新 + （开启时）每首歌随机动画模式
 function onSongMaybeChanged(){
+  // 封面变化推送给当前背景（monet/nomand/common/latent 仅经 setCoverUrl 收封面，
+  // 且 tick 不消费 frameState.coverUrl，漏推会导致背景停留在上一首封面）；
+  // 背景内部另有幂等判断，此处去重避免每次 snapshot 重复触发重建管线
+  if(S.coverUrl!==lastCoverForBg){
+    lastCoverForBg=S.coverUrl;
+    if(activeBg&&activeBg.setCoverUrl){
+      try{activeBg.setCoverUrl(S.coverUrl)}catch(e){}
+    }
+  }
   var key=songKeyOf();
   if(key!==lastSongKeyForTheme){
     lastSongKeyForTheme=key;
