@@ -133,13 +133,14 @@
           </div>
         </div>
       </div>
-      <!-- 背景设置（6 种背景下拉，经 FoliaBackgrounds 调度） -->
+      <!-- 背景设置（7 种背景下拉，经 FoliaBackgrounds 调度） -->
       <div class="sm-row">
         <span class="sm-row-label">背景</span>
         <div style="display:flex;gap:8px">
           <div class="sm-anim-wrap">
             <button class="sm-seg-btn active" id="folia-bg-btn">通用</button>
             <div class="sm-anim-popup" id="folia-bg-popup">
+              <div class="sm-anim-option" data-val="transparent"><span class="sm-anim-dot"></span>透明</div>
               <div class="sm-anim-option selected" data-val="common"><span class="sm-anim-dot"></span>通用</div>
               <div class="sm-anim-option" data-val="monet"><span class="sm-anim-dot"></span>莫奈</div>
               <div class="sm-anim-option" data-val="nomand"><span class="sm-anim-dot"></span>漫游</div>
@@ -309,6 +310,9 @@ var lastFrameNow=0;                 // 帧间隔 dt 计算
 var activeMode=null;                // 当前模式实例（FoliaRegistry.switchMode 返回）
 var switchingMode=false;            // 模式切换中标记
 var activeBg=null;                  // 当前背景实例（FoliaBackgrounds.switchBackground 返回）
+// 宿主窗口背景有效状态（echo-folia:window-background / echo-folia:init 推送）：
+// { enabled:窗口背景是否开启, frosted:毛玻璃, opacity:背景不透明度 0~1 }，transparent 背景消费
+var windowBgState={enabled:false,frosted:false,opacity:1};
 
 // 歌词时间矫正（秒），正值让歌词提前，负值延后。
 // 只平移"歌词时间轴"，绝不修改真实播放进度（进度条/时间数字不受影响）。
@@ -551,7 +555,7 @@ document.getElementById('url-bg-input').addEventListener('keydown',function(e){
   if(e.key==='Enter'){e.preventDefault();addUrlBgItem()}
 })
 
-// 切换背景（6 种，经 FoliaBackgrounds 调度）
+// 切换背景（7 种，经 FoliaBackgrounds 调度）
 async function switchToBackground(mode){
   backgroundMode=window.FoliaBackgrounds.resolveId(mode);
   try{
@@ -559,13 +563,16 @@ async function switchToBackground(mode){
       theme:currentTheme,coverUrl:S.coverUrl,
       config:backgroundMode==='common'
         ?{useCoverColorBg:S.coverBlur,opacity:0.75,disableGeometricBackground:false,disableVignette:false}
-        :(backgroundMode==='url'?urlBgConfig():undefined)
+        :(backgroundMode==='url'?urlBgConfig()
+        :(backgroundMode==='transparent'?{windowBg:windowBgState}:undefined))
     });
     if(activeBg.setTheme&&currentTheme)activeBg.setTheme(currentTheme);
     if(activeBg.setCoverUrl)activeBg.setCoverUrl(S.coverUrl);
   }catch(e){console.warn('[Folia] 背景切换失败',e)}
   updateLegacyLayers();
   syncBackgroundUI();
+  // 上报当前背景模式：宿主据此挂 folia-transparent-bg（透明模式下让出覆盖层背景、隐藏主界面）并回推窗口背景状态
+  try{parent.postMessage({source:'echo-folia-child',type:'echo-folia:background-mode',payload:{mode:backgroundMode}},'*')}catch(e){}
 }
 
 // 旧图层显隐控制：geo-layer 恒隐藏（新背景系统接管）；
@@ -748,6 +755,13 @@ window.addEventListener('message',function(ev){
   switch(d.type){
     case'echo-folia:init':
       var init=d.payload||{};
+      // 宿主窗口背景初始状态：透明背景在 ready 前已完成挂载，此处补齐状态刷新 scrim
+      if(init.windowBackground){
+        windowBgState=init.windowBackground;
+        if(backgroundMode==='transparent'&&activeBg&&activeBg.setWindowBg){
+          try{activeBg.setWindowBg(windowBgState)}catch(e){}
+        }
+      }
       hostPlatform=String(init.hostControls?.platform||'').toLowerCase();
       hostCanMiniPlayer=Boolean(init.hostControls?.canShowMiniPlayer);
       hostShowFullscreen=init.hostControls?.showFullscreenButton!==false;
@@ -858,6 +872,13 @@ window.addEventListener('message',function(ev){
       var appearancePayload=d.payload||{};
       if(appearancePayload.lyricFontFamily){
         applyLyricFontFamily(appearancePayload.lyricFontFamily);
+      }
+      break;
+    case'echo-folia:window-background':
+      // 宿主窗口背景有效状态变化（毛玻璃/透明度等）：记录并实时更新 transparent 背景 scrim
+      windowBgState=d.payload||{enabled:false,frosted:false,opacity:1};
+      if(backgroundMode==='transparent'&&activeBg&&activeBg.setWindowBg){
+        try{activeBg.setWindowBg(windowBgState)}catch(e){}
       }
       break;
   }

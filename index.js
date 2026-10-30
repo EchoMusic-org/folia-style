@@ -31,6 +31,23 @@ function text(value, fallback = '') {
   return resolved || fallback
 }
 
+// 读取宿主窗口背景有效状态（根元素 class + 计算样式）：
+// 主程序 applyWindowBackground 已把生效形态落到 html class 与 --app-background-opacity，
+// 这里只读取不重复判定，iframe 的 transparent 背景据此生成 scrim
+function readWindowBackgroundState() {
+  const root = document.documentElement
+  const enabled = root.classList.contains('app-background-enabled')
+  const frosted = root.classList.contains('app-background-frosted')
+  let opacity = 1
+  if (enabled) {
+    const parsed = Number.parseFloat(
+      getComputedStyle(root).getPropertyValue('--app-background-opacity'),
+    )
+    if (Number.isFinite(parsed)) opacity = Math.min(1, Math.max(0, parsed))
+  }
+  return { enabled, frosted, opacity }
+}
+
 // 提取歌曲标题
 function trackTitle(track) {
   return text(track?.title || track?.name || track?.songname, '未知歌曲')
@@ -185,6 +202,7 @@ function createPlayerFrame(ctx, closeOverlay) {
       let stopTrackWatch = null
       let stopVolumeWatch = null
       let stopFontWatch = null
+      let stopWindowBackgroundWatch = null
       let commandQueue = Promise.resolve()
       let positionHeartbeatTimer = null
 
@@ -407,6 +425,37 @@ function createPlayerFrame(ctx, closeOverlay) {
           type: 'echo-folia:appearance',
           payload: buildAppearancePayload(),
         })
+      }
+
+      // 推送宿主窗口背景有效状态（transparent 背景据此生成 scrim）
+      const pushWindowBackground = () => {
+        if (!ready || disposed) return
+        postToFrame({
+          type: 'echo-folia:window-background',
+          payload: readWindowBackgroundState(),
+        })
+      }
+
+      // 监听宿主窗口背景设置变化（毛玻璃/透明度切换时刷新 transparent 背景与主界面显隐）
+      const initWindowBackgroundWatch = () => {
+        if (stopWindowBackgroundWatch) return
+        const settings = ctx.stores.settings || ctx.settings
+        if (!settings || !ctx.vue.watch) return
+        stopWindowBackgroundWatch = ctx.vue.watch(
+          () => {
+            const bg = settings.windowBackground || {}
+            return [
+              bg.enabled ? '1' : '0',
+              bg.frosted ? '1' : '0',
+              String(bg.transparency ?? ''),
+              settings.windowBackgroundActiveEnabled ? '1' : '0',
+              String(settings.windowBackgroundActiveFrosted ?? ''),
+            ].join('::')
+          },
+          () => {
+            pushWindowBackground()
+          },
+        )
       }
 
       // 监听宿主字体设置变化
@@ -727,6 +776,8 @@ function createPlayerFrame(ctx, closeOverlay) {
                 pluginVersion: String(ctx.manifest?.version || ''),
                 hostControls: buildHostControlsPayload(),
                 lyricFontFamily: buildAppearancePayload().lyricFontFamily,
+                // 窗口背景有效状态：transparent 背景在 ready 前已挂载，靠 init 补齐 scrim 状态
+                windowBackground: readWindowBackgroundState(),
                 settings: {
                   animMode: savedAnimMode,
                   intensity: savedIntensity,
@@ -746,6 +797,15 @@ function createPlayerFrame(ctx, closeOverlay) {
           case 'echo-folia:command':
             handleCommand(data)
             break
+          case 'echo-folia:background-mode': {
+            const mode = String(data.payload?.mode || '')
+            // 透明背景模式下让出覆盖层背景并隐藏主界面（style.css 按 folia-transparent-bg 生效），
+            // 切回其他背景时移除，恢复不透明覆盖层
+            document.body.classList.toggle('folia-transparent-bg', mode === 'transparent')
+            // 回推当前窗口背景状态，transparent 背景据此设置 scrim
+            pushWindowBackground()
+            break
+          }
           case 'echo-folia:request-snapshot':
             pushSnapshot()
             pushLyrics(true)
@@ -783,6 +843,7 @@ function createPlayerFrame(ctx, closeOverlay) {
         initTrackWatch()
         initVolumeWatch()
         initFontWatch()
+        initWindowBackgroundWatch()
         startPositionHeartbeat()
         bindHostControlsRefresh()
 
@@ -813,6 +874,8 @@ function createPlayerFrame(ctx, closeOverlay) {
         disposed = true
         ready = false
         document.body.classList.remove('folia-overlay-open')
+        // 透明背景的宿主侧联动（容器透明/主界面隐藏）随覆盖层一并还原
+        document.body.classList.remove('folia-transparent-bg')
         window.removeEventListener('message', handleMessage)
         window.removeEventListener('keydown', handleKeydown, true)
         unbindHostControlsRefresh()
@@ -825,6 +888,8 @@ function createPlayerFrame(ctx, closeOverlay) {
         stopVolumeWatch = null
         if (stopFontWatch) stopFontWatch()
         stopFontWatch = null
+        if (stopWindowBackgroundWatch) stopWindowBackgroundWatch()
+        stopWindowBackgroundWatch = null
         if (spectrumDispose) spectrumDispose()
         spectrumDispose = null
       })

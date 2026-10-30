@@ -1,5 +1,5 @@
 // 背景注册表：移植自 folia-major src/components/visualizer/backgrounds/{definition,registry}.tsx
-// 6 种背景模式：common（底色+流体封面+几何）、latent、monet、nomand、sora、url。
+// 7 种背景模式：transparent（透出宿主窗口毛玻璃/透明材质）、common（底色+流体封面+几何）、latent、monet、nomand、sora、url。
 // 背景实例接口：{ id, mount(hostEl), setTheme(theme), setCoverUrl(url), tick(frameState), destroy() }
 // frameState: { audioPower(0~1), audioBands({bass,lowMid,mid,vocal,treble} 0~1), isPlaying, dt, coverUrl }
 // 注意：原版音频值域为 0~255，本插件统一 0~1，背景内部按需 ×255 还原原版公式。
@@ -7,6 +7,7 @@
   'use strict'
 
   var MODES = [
+    { id: 'transparent', label: '透明', file: ['backgrounds/transparent.js'], globalName: 'FoliaBgTransparent', order: 5 },
     { id: 'common', label: '通用', file: ['backgrounds/common.js'], globalName: 'FoliaBgCommon', order: 10 },
     { id: 'monet', label: '莫奈', file: ['backgrounds/monet-bg.js'], globalName: 'FoliaBgMonet', order: 20 },
     { id: 'nomand', label: '漫游', file: ['backgrounds/nomand.js'], globalName: 'FoliaBgNomand', vendor: ['paperShaders'], order: 30 },

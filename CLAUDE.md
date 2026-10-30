@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 插件的作用是替换宿主内置的歌词页——当宿主 `player.isLyricViewOpen` 变为 true 时，本插件挂载一个全屏覆盖层，在其中用 `<iframe>` 加载 `folia/bridge.html`（独立的可视化前端），通过 `postMessage` 与宿主双向通信。
 
-歌词动画体系是 **folia-major（React 项目）14 种歌词可视化模式的原生 JS 一比一复刻**（另含其 6 种背景系统与封面取色主题）。歌词数据不用原版的解析管线，而是沿用本插件现有获取方式：宿主 Pinia lyric store → `index.js` 归一化毫秒行 → postMessage → iframe 内适配为原版 Line 结构（秒）。
+歌词动画体系是 **folia-major（React 项目）14 种歌词可视化模式的原生 JS 一比一复刻**（另含其 6 种背景系统与封面取色主题，另有自研 transparent 透明背景）。歌词数据不用原版的解析管线，而是沿用本插件现有获取方式：宿主 Pinia lyric store → `index.js` 归一化毫秒行 → postMessage → iframe 内适配为原版 Line 结构（秒）。
 
 没有构建、没有测试、没有 lint 配置。所有 JS 都是运行时直接由宿主/浏览器执行的源码——修改后直接由 EchoMusic 加载即可，不需要打包。
 
@@ -53,8 +53,9 @@ folia/
     pendolo-core.js + pendolo.js  # 时计（表盘弧形歌词 + 机芯 canvas）
     cappella.js            # 群唱（聊天弹幕 + 表情/头像图）
     still.js               # 静止（低占用静态三行）
-  backgrounds/           # 6 种背景系统（与模式同构的注册表 + 实例接口）
-    background-registry.js # 背景注册表（common/latent/monet/nomand/sora/url）
+  backgrounds/           # 7 种背景系统（与模式同构的注册表 + 实例接口）
+    background-registry.js # 背景注册表（transparent/common/latent/monet/nomand/sora/url）
+    transparent.js         # 透明背景：不绘制内容，scrim 透出宿主窗口毛玻璃/透明材质（参照主程序歌词页 rgba(0,0,0,0.55)）
     paper-mount.js         # @paper-design/shaders core 适配层（uniforms 组装 + 图片预加载）
     common.js              # 底色 + 可选封面流体（blur 40px 交叉淡入）+ 几何音频响应 + 暗角
     latent.js              # MeshGradient + Dithering 双 shader + 音频响应
@@ -103,8 +104,9 @@ folia/
 所有消息带 `source` 字段区分方向；宿主发 `echo-folia-parent`，iframe 发 `echo-folia-child`。
 
 宿主 → iframe（`index.js` 中 `postToFrame`）：
-- `echo-folia:init`：iframe ready 后一次，携带 `pluginVersion / hostControls(含 nativeWindowControls/windowControlsInset) / settings(动画模式+强度)`
+- `echo-folia:init`：iframe ready 后一次，携带 `pluginVersion / hostControls(含 nativeWindowControls/windowControlsInset) / windowBackground(窗口背景有效状态) / settings(动画模式+强度)`
 - `echo-folia:host-controls`：宿主窗口能力变更（缩放/全屏等导致原生按钮预留宽度变化）时重推，iframe 据此重装右上角窗口控制按钮；宿主 >=2.3.2-beta.2 在 Windows/Linux 用原生 `titleBarOverlay` 按钮，插件据此不再自绘最小化/最大化/关闭，并把 mini+全屏 右移 `windowControlsInset` 避开原生按钮
+- `echo-folia:window-background`：宿主窗口背景有效状态 `{ enabled, frosted, opacity }`（读自 html class + `--app-background-opacity`，由 init/设置变更/背景模式上报时推送），transparent 背景据此生成 scrim
 - `echo-folia:snapshot`：完整状态（track / queue / playMode / isFavorited / coverBlur / lyric.currentIndex 等），命令执行后与曲目/音量变化会强制重推
 - `echo-folia:lyrics`：归一化后的歌词行（毫秒；characters 逐字时间轴同为毫秒），带 dedupe key
 - `echo-folia:position`：`{position_ms, duration_ms, is_playing, cause}`，5 秒心跳 + 事件驱动
@@ -113,6 +115,7 @@ folia/
 
 iframe → 宿主（`bridge.html` 内 `parent.postMessage`）：
 - `echo-folia:ready`：iframe 完成初始化
+- `echo-folia:background-mode`：每次 switchToBackground 后上报当前背景模式；宿主据此挂/摘 `body.folia-transparent-bg`（透明模式下 style.css 让出覆盖层背景、隐藏 `.main-layout`），并回推 `echo-folia:window-background`
 - `echo-folia:request-snapshot`：请求重推快照+歌词+位置
 - `echo-folia:command`：受支持的 `command` 值在 `index.js` 的 `executeCommand` 里，包括
   `toggle-play/play/pause/prev/next/seek/volume/cycle-mode/set-mode/play-index/play-song/queue-play-next-song/queue-play-next-index/queue-remove-index/queue-clear/close/mini-player/window-control/open-artist/open-album/toggle-favorite/toggle-cover-blur/set-anim-mode/set-intensity`
@@ -124,7 +127,7 @@ iframe → 宿主（`bridge.html` 内 `parent.postMessage`）：
 - 前半是模板 DOM：设置菜单（音乐/歌词/设置/播放列表四页）、底部控制胶囊、`#folia-bg-host`（背景挂载，z1）、`#folia-mode-host`（模式挂载，z5）、`#win-controls` 窗口控制。
 - 主脚本：状态机 `S`、歌词过滤（保留）、模式/背景注册表调度（`switchToMode/switchToBackground`）、切歌钩子 `onSongMaybeChanged`（主题取色 + 每歌随机模式）、主循环 `tick`（进度条 + frameState 驱动模式 + 背景帧驱动）。
 - 时间轴：宿主 `position` 事件只在事件/心跳时发；iframe 用 `getLocalTimeMs()` 做本地外推，加上用户 `folia-timeOffset`（localStorage 存的歌词矫正秒数）得到 `effectiveLyricTimeMs()`——只影响歌词显示，绝不改真实播放进度。
-- 设置存储（localStorage）：`folia-animMode`（模式 id，旧 id 自动经 `FoliaRegistry.resolveId` 映射）、`folia-intensity`（calm/normal/chaotic）、`folia-backgroundMode`（6 种背景）、`folia-randomModePerSong`（每歌随机开关）、`folia-timeOffset`、`folia-lyricFilterEnabled/folia-lyricFilterRegex`、`folia-coverBlur`、`folia-urlBackgrounds`（url 背景列表 JSON）。
+- 设置存储（localStorage）：`folia-animMode`（模式 id，旧 id 自动经 `FoliaRegistry.resolveId` 映射）、`folia-intensity`（calm/normal/chaotic）、`folia-backgroundMode`（7 种背景）、`folia-randomModePerSong`（每歌随机开关）、`folia-timeOffset`、`folia-lyricFilterEnabled/folia-lyricFilterRegex`、`folia-coverBlur`、`folia-urlBackgrounds`（url 背景列表 JSON）。
 - 背景切换幂等（同 id 重复调用返回现有实例）；common 背景的 `useCoverColorBg` 跟随 `folia-coverBlur` 开关，变更时销毁重建实例。
 
 新增模式的路径：按 `TRANSPILE_GUIDE.md` 写 `modes/xxx.js`（工厂 `window.FoliaModeXxx.create`）→ `runtime/registry.js` 注册（大体量模式用模块数组）→ `bridge.html` 设置菜单加选项。vendor 依赖（pixi/three/pretext）由注册表在加载模式前自动懒加载。
