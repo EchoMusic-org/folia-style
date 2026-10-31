@@ -151,6 +151,23 @@
           </div>
         </div>
       </div>
+      <!-- 透明背景面板（仅 transparent 背景时显示）：背景透明度滑块 + 毛玻璃三段开关 -->
+      <div class="url-bg-panel" id="transparent-bg-panel">
+        <div class="tr-panel-row">
+          <span class="tr-panel-label">背景透明度</span>
+          <input type="range" id="tr-opacity-range" class="tr-opacity-range" min="0" max="100" step="1">
+          <span class="lyric-offset-value" id="tr-opacity-value">--</span>
+        </div>
+        <div class="tr-panel-row">
+          <span class="tr-panel-label">毛玻璃</span>
+          <div class="sm-seg" id="tr-frost-seg">
+            <button class="sm-seg-btn" data-frost="off" type="button">关</button>
+            <button class="sm-seg-btn" data-frost="foreground" type="button">仅前台</button>
+            <button class="sm-seg-btn" data-frost="always" type="button">始终</button>
+          </div>
+        </div>
+        <div class="tr-panel-hint" id="tr-panel-hint"></div>
+      </div>
       <!-- 网页背景 URL 管理（仅 url 背景时显示） -->
       <div class="url-bg-panel" id="url-bg-panel">
         <div style="display:flex;align-items:center;gap:6px">
@@ -311,8 +328,8 @@ var activeMode=null;                // 当前模式实例（FoliaRegistry.switch
 var switchingMode=false;            // 模式切换中标记
 var activeBg=null;                  // 当前背景实例（FoliaBackgrounds.switchBackground 返回）
 // 宿主窗口背景有效状态（echo-folia:window-background / echo-folia:init 推送）：
-// { enabled:窗口背景是否开启, frosted:毛玻璃, opacity:背景不透明度 0~1 }，transparent 背景消费
-var windowBgState={enabled:false,frosted:false,opacity:1};
+// { enabled:窗口背景是否开启, frosted:毛玻璃, opacity:背景不透明度 0~1, keepOnBlur:失焦保持毛玻璃 }，transparent 背景消费
+var windowBgState={enabled:false,frosted:false,opacity:1,keepOnBlur:false,activeEnabled:false};
 
 // 歌词时间矫正（秒），正值让歌词提前，负值延后。
 // 只平移"歌词时间轴"，绝不修改真实播放进度（进度条/时间数字不受影响）。
@@ -555,6 +572,103 @@ document.getElementById('url-bg-input').addEventListener('keydown',function(e){
   if(e.key==='Enter'){e.preventDefault();addUrlBgItem()}
 })
 
+// ===== 透明背景面板（背景透明度滑块 + 毛玻璃三段开关，仅 transparent 背景时显示） =====
+// 滑块覆盖值只作用于本插件 scrim（transparent.js setOverlayOpacity），存插件 localStorage，
+// 不回写宿主透明度；毛玻璃三段经 echo-folia:command 临时接管宿主设置，退出歌词页由宿主回写。
+var transparentOverlay=(function(){
+  try{
+    var raw=localStorage.getItem('folia-transparentOpacity')
+    if(raw===null||raw==='')return null
+    var v=Number(raw)
+    return Number.isFinite(v)&&v>=0&&v<=100?v:null
+  }catch(e){return null}
+})()
+var trRange=document.getElementById('tr-opacity-range')
+var trRangeValue=document.getElementById('tr-opacity-value')
+var trRangeRaf=0
+// 把当前覆盖值同步到透明背景实例（切回 transparent 时 switchToBackground 也会经 config 带入）
+function applyTransparentOverlay(){
+  if(backgroundMode!=='transparent')return
+  if(activeBg&&activeBg.setOverlayOpacity){
+    try{activeBg.setOverlayOpacity(transparentOverlay)}catch(e){}
+  }
+}
+trRange.addEventListener('input',function(){
+  var v=Math.min(100,Math.max(0,Math.round(Number(trRange.value)||0)))
+  trRangeValue.textContent=v+'%'
+  if(trRangeRaf)return
+  trRangeRaf=requestAnimationFrame(function(){
+    trRangeRaf=0
+    transparentOverlay=v
+    try{localStorage.setItem('folia-transparentOpacity',String(v))}catch(e){}
+    applyTransparentOverlay()
+    // 同步到宿主：未开窗口背景时宿主临时开透明（transparency=滑块值），已开时仅对齐数值
+    sendCmd('set-window-transparency',{value:v})
+  })
+})
+// 毛玻璃三段持久选择：off=关 / foreground=仅前台 / always=始终；null=未设置（跟随宿主）
+// 与滑块同模型：进入歌词页自动应用，退出歌词页由宿主回写快照还原
+var transparentFrost=(function(){
+  try{
+    var raw=localStorage.getItem('folia-transparentFrost')
+    return raw==='off'||raw==='foreground'||raw==='always'?raw:null
+  }catch(e){return null}
+})()
+// 毛玻璃三段开关：off=关 / foreground=仅前台（失焦退回系统行为）/ always=始终（失焦保持）
+var frostBtns=Array.prototype.slice.call(document.querySelectorAll('#tr-frost-seg .sm-seg-btn'))
+frostBtns.forEach(function(btn){
+  btn.addEventListener('click',function(){
+    // 平台不支持窗口背景（activeEnabled=false）时禁用；未开启也允许点击——接管会临时开启
+    if(windowBgState.activeEnabled!==true)return
+    var mode=this.getAttribute('data-frost')
+    transparentFrost=mode
+    try{localStorage.setItem('folia-transparentFrost',mode)}catch(e){}
+    // 走现有 sendCmd 通道（command 平铺顶层），与 executeCommand 的读取格式一致
+    sendCmd('set-window-frosted-mode',{mode:mode})
+  })
+})
+// 透明背景下的自动接管：滑块有覆盖值而宿主未开窗口背景时请求临时开透明；
+// 毛玻璃有持久选择且与宿主当前生效状态不一致时请求应用。仅在收到 init（windowBgState
+// 为宿主真实值）后执行，避免启动时误接管
+var windowBgInitialized=false
+function ensureTransparentTakeover(){
+  if(!windowBgInitialized)return
+  if(backgroundMode!=='transparent')return
+  if(transparentOverlay!==null&&windowBgState.enabled!==true){
+    sendCmd('set-window-transparency',{value:transparentOverlay})
+  }
+  if(transparentFrost!==null){
+    var wantFrosted=transparentFrost!=='off'
+    var wantKeep=transparentFrost==='always'
+    if(windowBgState.frosted!==wantFrosted||(wantFrosted&&windowBgState.keepOnBlur!==wantKeep)){
+      sendCmd('set-window-frosted-mode',{mode:transparentFrost})
+    }
+  }
+}
+// 同步透明面板显隐与状态：滑块显示覆盖值（无覆盖时按宿主不透明度反推）、
+// 三段选中态与禁用态跟随宿主实际生效状态（接管后宿主推送的就是临时值，天然闭环）
+function syncTransparentPanel(){
+  var panel=document.getElementById('transparent-bg-panel')
+  if(!panel)return
+  var show=backgroundMode==='transparent'
+  panel.classList.toggle('active',show)
+  if(!show)return
+  var supported=windowBgState.activeEnabled===true
+  var display=transparentOverlay!==null
+    ?transparentOverlay
+    :Math.round((1-(Number(windowBgState.opacity)||1))*100)
+  trRange.value=String(Math.min(100,Math.max(0,Math.round(display))))
+  trRangeValue.textContent=trRange.value+'%'
+  var frostMode=!windowBgState.frosted?'off':(windowBgState.keepOnBlur?'always':'foreground')
+  frostBtns.forEach(function(btn){
+    btn.classList.toggle('active',btn.getAttribute('data-frost')===frostMode)
+  })
+  panel.classList.toggle('disabled',!supported)
+  document.getElementById('tr-panel-hint').textContent=!supported
+    ?'当前环境不支持窗口背景'
+    :(windowBgState.enabled===true?'':'调整将临时开启主程序窗口背景，退出歌词页后恢复')
+}
+
 // 切换背景（7 种，经 FoliaBackgrounds 调度）
 async function switchToBackground(mode){
   backgroundMode=window.FoliaBackgrounds.resolveId(mode);
@@ -564,13 +678,15 @@ async function switchToBackground(mode){
       config:backgroundMode==='common'
         ?{useCoverColorBg:S.coverBlur,opacity:0.75,disableGeometricBackground:false,disableVignette:false}
         :(backgroundMode==='url'?urlBgConfig()
-        :(backgroundMode==='transparent'?{windowBg:windowBgState}:undefined))
+        :(backgroundMode==='transparent'?{windowBg:windowBgState,overlayOpacity:transparentOverlay}:undefined))
     });
     if(activeBg.setTheme&&currentTheme)activeBg.setTheme(currentTheme);
     if(activeBg.setCoverUrl)activeBg.setCoverUrl(S.coverUrl);
   }catch(e){console.warn('[Folia] 背景切换失败',e)}
   updateLegacyLayers();
   syncBackgroundUI();
+  // 切到透明背景时（歌词页内切换），未开窗口背景且滑块有覆盖值则自动请求临时开透明
+  ensureTransparentTakeover();
   // 上报当前背景模式：宿主据此挂 folia-transparent-bg（透明模式下让出覆盖层背景、隐藏主界面）并回推窗口背景状态
   try{parent.postMessage({source:'echo-folia-child',type:'echo-folia:background-mode',payload:{mode:backgroundMode}},'*')}catch(e){}
 }
@@ -761,6 +877,11 @@ window.addEventListener('message',function(ev){
         if(backgroundMode==='transparent'&&activeBg&&activeBg.setWindowBg){
           try{activeBg.setWindowBg(windowBgState)}catch(e){}
         }
+        // 面板滑块/三段开关按初始状态同步一次
+        syncTransparentPanel();
+        // 宿主未开窗口背景而滑块有覆盖值时，自动请求临时开透明
+        windowBgInitialized=true;
+        ensureTransparentTakeover();
       }
       hostPlatform=String(init.hostControls?.platform||'').toLowerCase();
       hostCanMiniPlayer=Boolean(init.hostControls?.canShowMiniPlayer);
@@ -876,10 +997,12 @@ window.addEventListener('message',function(ev){
       break;
     case'echo-folia:window-background':
       // 宿主窗口背景有效状态变化（毛玻璃/透明度等）：记录并实时更新 transparent 背景 scrim
-      windowBgState=d.payload||{enabled:false,frosted:false,opacity:1};
+      windowBgState=d.payload||{enabled:false,frosted:false,opacity:1,keepOnBlur:false};
       if(backgroundMode==='transparent'&&activeBg&&activeBg.setWindowBg){
         try{activeBg.setWindowBg(windowBgState)}catch(e){}
       }
+      // 三段开关选中态/禁用态跟随宿主实际生效值（含临时接管后的回推）
+      syncTransparentPanel();
       break;
   }
 });
@@ -1290,6 +1413,8 @@ function syncBackgroundUI(){
   bgOptions.forEach(function(o){o.classList.toggle('selected',o.getAttribute('data-val')===backgroundMode)});
   // 网页背景的 URL 管理面板显隐与列表跟随背景模式刷新
   renderUrlBgPanel();
+  // 透明背景面板（滑块 + 毛玻璃三段）跟随背景模式显隐并同步状态
+  syncTransparentPanel();
 }
 bgBtn.onclick=function(e){e.stopPropagation();toggleBgPopup()};
 bgOptions.forEach(function(opt){

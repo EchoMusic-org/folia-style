@@ -33,8 +33,9 @@ function text(value, fallback = '') {
 
 // 读取宿主窗口背景有效状态（根元素 class + 计算样式）：
 // 主程序 applyWindowBackground 已把生效形态落到 html class 与 --app-background-opacity，
-// 这里只读取不重复判定，iframe 的 transparent 背景据此生成 scrim
-function readWindowBackgroundState() {
+// 这里只读取不重复判定，iframe 的 transparent 背景据此生成 scrim；
+// activeEnabled（平台是否支持窗口背景）与 keepOnBlur 从 settings store 读取
+function readWindowBackgroundState(extra) {
   const root = document.documentElement
   const enabled = root.classList.contains('app-background-enabled')
   const frosted = root.classList.contains('app-background-frosted')
@@ -45,7 +46,13 @@ function readWindowBackgroundState() {
     )
     if (Number.isFinite(parsed)) opacity = Math.min(1, Math.max(0, parsed))
   }
-  return { enabled, frosted, opacity }
+  return {
+    enabled,
+    frosted,
+    opacity,
+    keepOnBlur: Boolean(extra?.keepOnBlur),
+    activeEnabled: Boolean(extra?.activeEnabled),
+  }
 }
 
 // 提取歌曲标题
@@ -427,13 +434,83 @@ function createPlayerFrame(ctx, closeOverlay) {
         })
       }
 
+      // 读取宿主毛玻璃偏好与平台能力（settings store 的 windowBackground），随窗口背景状态一并推送
+      const readWindowBgPreference = () => {
+        const settings = ctx.stores.settings || ctx.settings
+        const bg = settings?.windowBackground || {}
+        return {
+          keepOnBlur: bg.keepFrostedOnBlur === true,
+          activeEnabled: settings?.windowBackgroundActiveEnabled === true,
+        }
+      }
+
       // 推送宿主窗口背景有效状态（transparent 背景据此生成 scrim）
       const pushWindowBackground = () => {
         if (!ready || disposed) return
         postToFrame({
           type: 'echo-folia:window-background',
-          payload: readWindowBackgroundState(),
+          payload: readWindowBackgroundState(readWindowBgPreference()),
         })
+      }
+
+      // ===== 歌词页专属透明度/毛玻璃的临时接管（仅透明背景模式期间生效） =====
+      // 滑块与三段开关经 settings.setWindowBackground 直接改 settings store（渲染层
+      // persist.omit 不落 localStorage，theme store 的偏好事实源不碰）；唯一 IPC 通道
+      // （window-background:set）会把临时值写进主进程设置文件，属预期：首次接管时快照，
+      // 退出歌词页/切走透明背景/覆盖层卸载时回写，主程序启动时 theme→settings 的同步
+      // 链路也会把崩溃残留纠正回来。
+      let windowBgSnapshot = null
+      const readWindowBgSnapshot = () => {
+        const settings = ctx.stores.settings || ctx.settings
+        const bg = settings?.windowBackground || {}
+        return {
+          enabled: bg.enabled === true,
+          transparency: Number(bg.transparency) || 0,
+          frosted: bg.frosted === true,
+          keepFrostedOnBlur: bg.keepFrostedOnBlur === true,
+        }
+      }
+      const setWindowBgPatch = (patch) => {
+        const settings = ctx.stores.settings || ctx.settings
+        if (!settings || typeof settings.setWindowBackground !== 'function') return
+        void settings.setWindowBackground(patch)
+      }
+      const ensureWindowBgSnapshot = () => {
+        if (!windowBgSnapshot) windowBgSnapshot = readWindowBgSnapshot()
+      }
+      // 滑块命令：滑块值即主程序 transparency 语义（0=不透明，100=全透）；
+      // 宿主未开窗口背景时强制临时开启（否则窗口不透明，桌面无法透出），退出时回写快照
+      const applyWindowTransparency = (value) => {
+        const transparency = Math.round(Math.min(100, Math.max(0, Number(value) || 0)))
+        ensureWindowBgSnapshot()
+        setWindowBgPatch({ enabled: true, transparency })
+      }
+      // 三段开关命令：off=关 / foreground=仅前台（失焦退回系统行为）/ always=始终（失焦保持）；
+      // 开毛玻璃与主程序设置页语义一致——窗口背景一并开启
+      const applyFrostedMode = (mode) => {
+        const patches = {
+          off: { frosted: false, keepFrostedOnBlur: false },
+          foreground: { enabled: true, frosted: true, keepFrostedOnBlur: false },
+          always: { enabled: true, frosted: true, keepFrostedOnBlur: true },
+        }
+        const patch = patches[mode]
+        if (!patch) return
+        ensureWindowBgSnapshot()
+        setWindowBgPatch(patch)
+      }
+      // 回写快照恢复宿主原设置（值未变时跳过，避免无谓的材质重应用）
+      const restoreWindowBg = () => {
+        const snapshot = windowBgSnapshot
+        windowBgSnapshot = null
+        if (!snapshot) return
+        const current = readWindowBgSnapshot()
+        const same =
+          current.enabled === snapshot.enabled &&
+          current.transparency === snapshot.transparency &&
+          current.frosted === snapshot.frosted &&
+          current.keepFrostedOnBlur === snapshot.keepFrostedOnBlur
+        if (same) return
+        setWindowBgPatch(snapshot)
       }
 
       // 监听宿主窗口背景设置变化（毛玻璃/透明度切换时刷新 transparent 背景与主界面显隐）
@@ -448,6 +525,8 @@ function createPlayerFrame(ctx, closeOverlay) {
               bg.enabled ? '1' : '0',
               bg.frosted ? '1' : '0',
               String(bg.transparency ?? ''),
+              // keepFrostedOnBlur 单独变化（前台↔始终，frosted 不变）也要触发推送刷新三段 UI
+              bg.keepFrostedOnBlur ? '1' : '0',
               settings.windowBackgroundActiveEnabled ? '1' : '0',
               String(settings.windowBackgroundActiveFrosted ?? ''),
             ].join('::')
@@ -732,6 +811,12 @@ function createPlayerFrame(ctx, closeOverlay) {
           const intensity = String(data.intensity || 'normal')
           try { window.localStorage.setItem('folia-intensity', intensity) } catch (e) { console.warn('[FoliaBridge] 保存强度设置失败', e) }
         }
+        else if (data.command === 'set-window-frosted-mode') {
+          applyFrostedMode(String(data.mode || ''))
+        }
+        else if (data.command === 'set-window-transparency') {
+          applyWindowTransparency(data.value)
+        }
       }
 
       // 命令完成后补发状态
@@ -777,7 +862,7 @@ function createPlayerFrame(ctx, closeOverlay) {
                 hostControls: buildHostControlsPayload(),
                 lyricFontFamily: buildAppearancePayload().lyricFontFamily,
                 // 窗口背景有效状态：transparent 背景在 ready 前已挂载，靠 init 补齐 scrim 状态
-                windowBackground: readWindowBackgroundState(),
+                windowBackground: readWindowBackgroundState(readWindowBgPreference()),
                 settings: {
                   animMode: savedAnimMode,
                   intensity: savedIntensity,
@@ -802,6 +887,8 @@ function createPlayerFrame(ctx, closeOverlay) {
             // 透明背景模式下让出覆盖层背景并隐藏主界面（style.css 按 folia-transparent-bg 生效），
             // 切回其他背景时移除，恢复不透明覆盖层
             document.body.classList.toggle('folia-transparent-bg', mode === 'transparent')
+            // 歌词页内从透明背景切走时结束临时接管，回写宿主原设置
+            if (mode !== 'transparent') restoreWindowBg()
             // 回推当前窗口背景状态，transparent 背景据此设置 scrim
             pushWindowBackground()
             break
@@ -873,6 +960,8 @@ function createPlayerFrame(ctx, closeOverlay) {
       onBeforeUnmount(() => {
         disposed = true
         ready = false
+        // 覆盖层卸载（关闭歌词页/退出插件）时结束临时接管，回写宿主原设置
+        restoreWindowBg()
         document.body.classList.remove('folia-overlay-open')
         // 透明背景的宿主侧联动（容器透明/主界面隐藏）随覆盖层一并还原
         document.body.classList.remove('folia-transparent-bg')

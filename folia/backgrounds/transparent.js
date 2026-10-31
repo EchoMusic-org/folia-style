@@ -3,7 +3,10 @@
 //   - 毛玻璃（app-background-frosted）：固定 rgba(0,0,0,0.55)，不随透明度滑杆弱化
 //   - 透明窗口（app-background-enabled 且非毛玻璃）：同色 scrim，按宿主 --app-background-opacity 弱化
 //   - 宿主未开启窗口背景：回退不透明 #09090b（无材质可透，保持可用）
-// 窗口背景状态由宿主经 echo-folia:window-background 消息推送：{ enabled, frosted, opacity }
+// 窗口背景状态由宿主经 echo-folia:window-background 消息推送：{ enabled, frosted, opacity, keepOnBlur }
+// 插件设置菜单的「背景透明度」滑块经 setOverlayOpacity 注入覆盖值（0~100，越大越透）：
+//   - 未设置时维持主程序行为；设置后 scrim 透明度完全由滑块决定（毛玻璃开启时同样生效）
+//   - 覆盖值仅作用于本背景实例的 scrim，不回写宿主，主程序透明度保持原值
 (function () {
   'use strict'
 
@@ -11,6 +14,13 @@
     var host = null
     var scrim = null
     var state = normalizeState(config && config.windowBg)
+    var overlay = normalizeOverlay(config && config.overlayOpacity)
+
+    // 归一化滑块覆盖值：0~100 之外的值视为未设置（跟随宿主）
+    function normalizeOverlay(value) {
+      var num = Number(value)
+      return Number.isFinite(num) && num >= 0 && num <= 100 ? num : null
+    }
 
     // 归一化窗口背景状态，字段缺失时按「未开启」处理（回退不透明底）
     function normalizeState(raw) {
@@ -25,11 +35,22 @@
     // 按窗口背景状态更新 scrim 外观
     function apply() {
       if (!scrim) return
+      // 滑块覆盖值优先：滑块值即「背景透明度」（0=不透明纯黑，100=全透），直接决定 scrim 有效 alpha。
+      // 宿主未开窗口背景时也照常渲染——滑块拖动/自动接管会让宿主临时开透明，此处先乐观呈现，
+      // 避免接管生效前 scrim 跳回不透明底造成闪变
+      if (overlay !== null) {
+        var alpha = Math.min(1, Math.max(0, 1 - overlay / 100))
+        scrim.style.background = 'rgba(0, 0, 0, ' + alpha + ')'
+        scrim.style.opacity = '1'
+        return
+      }
       if (!state.enabled) {
         // 宿主未开启窗口背景：无原生材质可透，回退不透明深色底
         scrim.style.background = '#09090b'
         scrim.style.opacity = '1'
-      } else if (state.frosted) {
+        return
+      }
+      if (state.frosted) {
         // 毛玻璃：与主程序歌词页同款固定 scrim，独立于透明度滑杆
         scrim.style.background = 'rgba(0, 0, 0, 0.55)'
         scrim.style.opacity = '1'
@@ -59,6 +80,11 @@
       // 宿主窗口背景状态变化（消息实时推送）时更新 scrim
       setWindowBg: function (next) {
         state = normalizeState(next)
+        apply()
+      },
+      // 设置菜单滑块注入的覆盖透明度（0~100，null/undefined 表示跟随宿主）
+      setOverlayOpacity: function (value) {
+        overlay = normalizeOverlay(value)
         apply()
       },
       setTheme: function () { /* 透明背景不消费主题 */ },

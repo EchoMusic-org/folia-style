@@ -519,6 +519,20 @@ html.folia-bg-transparent,html.folia-bg-transparent body{background:transparent}
   cursor:pointer;transition:all 0.2s ease;
 }
 .url-bg-item-del:hover{background:rgba(255,255,255,0.12);color:#ef4444}
+/* 透明背景面板（滑块 + 毛玻璃三段开关，复用 url-bg-panel 显隐） */
+.url-bg-panel.disabled{opacity:0.45;pointer-events:none}
+.tr-panel-row{display:flex;align-items:center;gap:8px}
+.tr-panel-label{flex-shrink:0;font-size:11px;color:rgba(255,255,255,0.6)}
+.tr-opacity-range{
+  flex:1;height:4px;margin:0;appearance:none;-webkit-appearance:none;border-radius:2px;
+  background:rgba(255,255,255,0.16);outline:none;cursor:pointer;
+}
+.tr-opacity-range::-webkit-slider-thumb{
+  appearance:none;-webkit-appearance:none;width:13px;height:13px;border-radius:50%;
+  background:#fff;border:none;box-shadow:0 1px 4px rgba(0,0,0,0.4);
+}
+.tr-panel-hint{min-height:0;font-size:10px;line-height:1.5;color:rgba(255,255,255,0.4)}
+.tr-panel-hint:empty{display:none}
 .lyric-offset-value{
   min-width:48px;text-align:center;font-size:13px;
   font-variant-numeric:tabular-nums;color:rgba(255,255,255,0.85);

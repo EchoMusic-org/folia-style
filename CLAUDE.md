@@ -55,7 +55,7 @@ folia/
     still.js               # 静止（低占用静态三行）
   backgrounds/           # 7 种背景系统（与模式同构的注册表 + 实例接口）
     background-registry.js # 背景注册表（transparent/common/latent/monet/nomand/sora/url）
-    transparent.js         # 透明背景：不绘制内容，scrim 透出宿主窗口毛玻璃/透明材质（参照主程序歌词页 rgba(0,0,0,0.55)）
+    transparent.js         # 透明背景：不绘制内容，scrim 透出宿主窗口毛玻璃/透明材质（参照主程序歌词页 rgba(0,0,0,0.55)）；支持 setOverlayOpacity 滑块覆盖值（透明面板「背景透明度」，仅作用本插件 scrim）
     paper-mount.js         # @paper-design/shaders core 适配层（uniforms 组装 + 图片预加载）
     common.js              # 底色 + 可选封面流体（blur 40px 交叉淡入）+ 几何音频响应 + 暗角
     latent.js              # MeshGradient + Dithering 双 shader + 音频响应
@@ -104,9 +104,9 @@ folia/
 所有消息带 `source` 字段区分方向；宿主发 `echo-folia-parent`，iframe 发 `echo-folia-child`。
 
 宿主 → iframe（`index.js` 中 `postToFrame`）：
-- `echo-folia:init`：iframe ready 后一次，携带 `pluginVersion / hostControls(含 nativeWindowControls/windowControlsInset) / windowBackground(窗口背景有效状态) / settings(动画模式+强度)`
+- `echo-folia:init`：iframe ready 后一次，携带 `pluginVersion / hostControls(含 nativeWindowControls/windowControlsInset) / windowBackground(窗口背景有效状态，含 keepOnBlur) / settings(动画模式+强度)`
 - `echo-folia:host-controls`：宿主窗口能力变更（缩放/全屏等导致原生按钮预留宽度变化）时重推，iframe 据此重装右上角窗口控制按钮；宿主 >=2.3.2-beta.2 在 Windows/Linux 用原生 `titleBarOverlay` 按钮，插件据此不再自绘最小化/最大化/关闭，并把 mini+全屏 右移 `windowControlsInset` 避开原生按钮
-- `echo-folia:window-background`：宿主窗口背景有效状态 `{ enabled, frosted, opacity }`（读自 html class + `--app-background-opacity`，由 init/设置变更/背景模式上报时推送），transparent 背景据此生成 scrim
+- `echo-folia:window-background`：宿主窗口背景有效状态 `{ enabled, frosted, opacity, keepOnBlur, activeEnabled }`（读自 html class + `--app-background-opacity` + settings store 的 keepFrostedOnBlur/activeEnabled，由 init/设置变更/背景模式上报时推送），transparent 背景据此生成 scrim，透明面板据此同步三段开关与禁用态
 - `echo-folia:snapshot`：完整状态（track / queue / playMode / isFavorited / coverBlur / lyric.currentIndex 等），命令执行后与曲目/音量变化会强制重推
 - `echo-folia:lyrics`：归一化后的歌词行（毫秒；characters 逐字时间轴同为毫秒），带 dedupe key
 - `echo-folia:position`：`{position_ms, duration_ms, is_playing, cause}`，5 秒心跳 + 事件驱动
@@ -115,10 +115,12 @@ folia/
 
 iframe → 宿主（`bridge.html` 内 `parent.postMessage`）：
 - `echo-folia:ready`：iframe 完成初始化
-- `echo-folia:background-mode`：每次 switchToBackground 后上报当前背景模式；宿主据此挂/摘 `body.folia-transparent-bg`（透明模式下 style.css 让出覆盖层背景、隐藏 `.main-layout`），并回推 `echo-folia:window-background`
+- `echo-folia:background-mode`：每次 switchToBackground 后上报当前背景模式；宿主据此挂/摘 `body.folia-transparent-bg`（透明模式下 style.css 让出覆盖层背景、隐藏 `.main-layout`），并回推 `echo-folia:window-background`；宿主收到非 transparent 时结束毛玻璃临时接管
 - `echo-folia:request-snapshot`：请求重推快照+歌词+位置
 - `echo-folia:command`：受支持的 `command` 值在 `index.js` 的 `executeCommand` 里，包括
-  `toggle-play/play/pause/prev/next/seek/volume/cycle-mode/set-mode/play-index/play-song/queue-play-next-song/queue-play-next-index/queue-remove-index/queue-clear/close/mini-player/window-control/open-artist/open-album/toggle-favorite/toggle-cover-blur/set-anim-mode/set-intensity`
+  `toggle-play/play/pause/prev/next/seek/volume/cycle-mode/set-mode/play-index/play-song/queue-play-next-song/queue-play-next-index/queue-remove-index/queue-clear/close/mini-player/window-control/open-artist/open-album/toggle-favorite/toggle-cover-blur/set-anim-mode/set-intensity/set-window-frosted-mode/set-window-transparency`
+
+**歌词页专属透明度/毛玻璃临时接管**（`set-window-transparency` / `set-window-frosted-mode`）：透明背景面板的滑块与三段开关触发（off=关/foreground=仅前台/always=始终），宿主经 `settings.setWindowBackground` 直接改 settings store（渲染层 `persist.omit` 不落 localStorage；theme store 的偏好事实源不碰）。滑块值即主程序 transparency 语义；宿主未开窗口背景时接管会强制 `enabled: true`（否则窗口不透明、桌面无法透出），开毛玻璃与主程序设置页语义一致也带 `enabled: true`。首次接管时快照完整四字段 `{enabled, transparency, frosted, keepFrostedOnBlur}`，覆盖层卸载（onBeforeUnmount）/歌词页内切走透明背景时回写；唯一 IPC 通道（`window-background:set`）会写主进程设置文件，歌词页打开期间主进程文件含临时值属预期，主程序启动时 theme→settings 同步链路会自动纠正崩溃残留。iframe 侧在 init 后/切到透明背景时，若滑块有覆盖值而宿主未开窗口背景会自动发起接管（`ensureTransparentTakeover`）。
 
 **改协议时两边都要改**：宿主 `index.js` + `folia/bridge.html`（搜 `echo-folia:` 就能找齐所有分支）。命令在宿主端通过 `commandQueue` 串行执行，命令完成后自动补发一次 snapshot + position。`set-anim-mode` 的 mode 值现在是原版模式 id（classic/cadenza/...），宿主只透传存储。
 
@@ -127,7 +129,7 @@ iframe → 宿主（`bridge.html` 内 `parent.postMessage`）：
 - 前半是模板 DOM：设置菜单（音乐/歌词/设置/播放列表四页）、底部控制胶囊、`#folia-bg-host`（背景挂载，z1）、`#folia-mode-host`（模式挂载，z5）、`#win-controls` 窗口控制。
 - 主脚本：状态机 `S`、歌词过滤（保留）、模式/背景注册表调度（`switchToMode/switchToBackground`）、切歌钩子 `onSongMaybeChanged`（主题取色 + 每歌随机模式）、主循环 `tick`（进度条 + frameState 驱动模式 + 背景帧驱动）。
 - 时间轴：宿主 `position` 事件只在事件/心跳时发；iframe 用 `getLocalTimeMs()` 做本地外推，加上用户 `folia-timeOffset`（localStorage 存的歌词矫正秒数）得到 `effectiveLyricTimeMs()`——只影响歌词显示，绝不改真实播放进度。
-- 设置存储（localStorage）：`folia-animMode`（模式 id，旧 id 自动经 `FoliaRegistry.resolveId` 映射）、`folia-intensity`（calm/normal/chaotic）、`folia-backgroundMode`（7 种背景）、`folia-randomModePerSong`（每歌随机开关）、`folia-timeOffset`、`folia-lyricFilterEnabled/folia-lyricFilterRegex`、`folia-coverBlur`、`folia-urlBackgrounds`（url 背景列表 JSON）。
+- 设置存储（localStorage）：`folia-animMode`（模式 id，旧 id 自动经 `FoliaRegistry.resolveId` 映射）、`folia-intensity`（calm/normal/chaotic）、`folia-backgroundMode`（7 种背景）、`folia-randomModePerSong`（每歌随机开关）、`folia-timeOffset`、`folia-lyricFilterEnabled/folia-lyricFilterRegex`、`folia-coverBlur`、`folia-urlBackgrounds`（url 背景列表 JSON）、`folia-transparentOpacity`（透明背景滑块覆盖值 0~100）、`folia-transparentFrost`（毛玻璃三段持久选择 off/foreground/always，null=跟随宿主）。滑块与三段均为歌词页专属偏好：进入歌词页自动应用（接管宿主），退出歌词页由宿主回写快照还原，不写主程序持久设置。
 - 背景切换幂等（同 id 重复调用返回现有实例）；common 背景的 `useCoverColorBg` 跟随 `folia-coverBlur` 开关，变更时销毁重建实例。
 
 新增模式的路径：按 `TRANSPILE_GUIDE.md` 写 `modes/xxx.js`（工厂 `window.FoliaModeXxx.create`）→ `runtime/registry.js` 注册（大体量模式用模块数组）→ `bridge.html` 设置菜单加选项。vendor 依赖（pixi/three/pretext）由注册表在加载模式前自动懒加载。
