@@ -1510,6 +1510,8 @@ function seekFromEvent(e){
   var valueSec=pct*(S.durationMs/1000);  // 宿主 seek 接收秒
   sendCmd('seek',{value:valueSec});
   progressFillEl.style.width=(pct*100)+'%';
+  // 同步主循环的写入游标，避免拖动写入被差分逻辑跳过或立刻覆盖
+  lastWrittenPct=pct*100;
 }
 progressEl.addEventListener('pointerdown',function(e){
   e.preventDefault();e.stopPropagation();
@@ -1535,12 +1537,23 @@ progressEl.addEventListener('click',function(e){
 // ===== 主循环 =====
 // 频段归一化：S.bass/mid/treble 为 0~200 值域（bins 均值/255*200），这里 /200 归一到 0~1
 function normBand(v){return clamp((Number(v)||0)/200,0,1)}
-// 组装音频频段（0~1），模式/背景内部按需 ×255 还原原版值域
+// 组装音频频段（0~1），模式/背景内部按需 ×255 还原原版值域。
+// 模块级单对象反复覆写：所有模式/背景都是每帧现读属性、不跨帧快照引用，
+// 复用省去每帧两次的对象分配（原实现 mode.tick 与 bg.tick 各 build 一次）
+var sharedAudioBands={bass:0,lowMid:0,mid:0,vocal:0,treble:0};
 function buildAudioBands(){
   var b=normBand(S.bass),m=normBand(S.mid),t=normBand(S.treble);
-  return{bass:b,lowMid:b*0.6+m*0.4,mid:m,vocal:m,treble:t};
+  sharedAudioBands.bass=b;
+  sharedAudioBands.lowMid=b*0.6+m*0.4;
+  sharedAudioBands.mid=m;
+  sharedAudioBands.vocal=m;
+  sharedAudioBands.treble=t;
+  return sharedAudioBands;
 }
 var timeCurrentEl=document.getElementById('time-current');
+// DOM 差分游标：同一秒内不重写时间文本，进度变化不足阈值不重写宽度（写入本身带 0.1s transition）
+var lastShownSecond=-1;
+var lastWrittenPct=-1;
 function tick(now){
   var dt=lastFrameNow?Math.min((now-lastFrameNow)/1000,0.05):1/60;
   lastFrameNow=now;
@@ -1548,8 +1561,15 @@ function tick(now){
   var localT=getLocalTimeMs();
   if(S.durationMs>0){
     var pct=clamp((localT/S.durationMs)*100,0,100);
-    progressFillEl.style.width=pct+'%';
-    timeCurrentEl.textContent=formatTime(localT);
+    if(Math.abs(pct-lastWrittenPct)>0.05){
+      lastWrittenPct=pct;
+      progressFillEl.style.width=pct+'%';
+    }
+    var currentSecond=Math.floor(localT/1000);
+    if(currentSecond!==lastShownSecond){
+      lastShownSecond=currentSecond;
+      timeCurrentEl.textContent=formatTime(localT);
+    }
   }
   // 歌词行索引 + 模式帧驱动（矫正后的歌词时间，秒；renderEndTime 内视为活动行，对齐原版行为）
   if(S.adaptedLines.length){
@@ -1572,7 +1592,18 @@ function tick(now){
   if(activeBg&&activeBg.tick){
     try{activeBg.tick({audioPower:S.rms,audioBands:buildAudioBands(),isPlaying:S.isPlaying,dt:dt,coverUrl:S.coverUrl})}catch(e){}
   }
-  requestAnimationFrame(tick);
+  scheduleNextFrame();
+}
+
+// 暂停时降频续帧：暂停态仍需低频 tick（lumiere 适配器依赖暂停 tick 检测 seek 补帧、
+// 进度/时间控件也要继续走），但无需 60fps 满转；播放恢复后回到 rAF 链
+var PAUSED_TICK_INTERVAL_MS=90;
+function scheduleNextFrame(){
+  if(S.isPlaying){
+    requestAnimationFrame(tick);
+  }else{
+    setTimeout(function(){requestAnimationFrame(tick)},PAUSED_TICK_INTERVAL_MS);
+  }
 }
 
 // ===== 启动 =====
