@@ -101,6 +101,51 @@
     return texture
   }
 
+  // ---------- 共享文字光栅 scratch ----------
+  // 高频逐行切换时，如果在“每次新建的 canvas”上直接 fillText，Chromium/Skia 会持续
+  // 累积原生内存（实测 renderer 私有内存约 8MB/分钟，JS GC 不回收；空白大画布与
+  // 复用画布均不增长）。这里把文字只画进一张复用的 scratch canvas，再把像素拷贝到
+  // 目标画布：目标画布仍是空白新建，纹理尺寸与布局完全不变，只把文字栅格化从
+  // “每张新画布”收敛到“同一张 scratch”。
+  var rasterScratch = null
+  var rasterScratchCtx = null
+  function ensureRasterScratch(width, height) {
+    var w = Math.max(1, Math.ceil(width))
+    var h = Math.max(1, Math.ceil(height))
+    if (!rasterScratch) {
+      rasterScratch = document.createElement('canvas')
+      rasterScratch.width = w
+      rasterScratch.height = h
+      rasterScratchCtx = rasterScratch.getContext('2d')
+    } else if (rasterScratch.width < w || rasterScratch.height < h) {
+      // scratch 只增不减：尺寸上限由调用方的画布尺寸决定（邻居行已受 MAX_CANVAS_PX 限制）
+      rasterScratch.width = Math.max(rasterScratch.width, w)
+      rasterScratch.height = Math.max(rasterScratch.height, h)
+      rasterScratchCtx = rasterScratch.getContext('2d')
+    }
+    rasterScratchCtx.clearRect(0, 0, w, h)
+    return rasterScratchCtx
+  }
+
+  // 把 scratch 左上角 width×height 区域拷贝成目标画布纹理
+  function rasterScratchToTexture(width, height) {
+    var canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.ceil(width))
+    canvas.height = Math.max(1, Math.ceil(height))
+    var ctx = canvas.getContext('2d')
+    ctx.drawImage(rasterScratch, 0, 0, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height)
+    return makeTexture(canvas)
+  }
+
+  // 在共享 scratch 上执行绘制，再拷贝到目标画布
+  function paintRaster(width, height, paint) {
+    var ctx = ensureRasterScratch(width, height)
+    ctx.save()
+    paint(ctx)
+    ctx.restore()
+    return rasterScratchToTexture(width, height)
+  }
+
   // 把字形烘焙成纯光晕（心象的模糊阶梯：紧核心 / 中光晕 / 淡外气），全强度——
   // 活强度/颜色由加性材质的 opacity/colour 逐帧给出。
   //
@@ -138,15 +183,12 @@
     var drawY = canvasHeightPx / 2
 
     var draw = function (paint) {
-      var canvas = document.createElement('canvas')
-      canvas.width = canvasWidthPx
-      canvas.height = canvasHeightPx
-      var ctx = canvas.getContext('2d')
-      ctx.font = fontSpec
-      ctx.textAlign = 'left'
-      ctx.textBaseline = 'middle'
-      paint(ctx)
-      return makeTexture(canvas)
+      return paintRaster(canvasWidthPx, canvasHeightPx, function (ctx) {
+        ctx.font = fontSpec
+        ctx.textAlign = 'left'
+        ctx.textBaseline = 'middle'
+        paint(ctx)
+      })
     }
 
     var baseTexture = draw(function (ctx) {
@@ -176,17 +218,15 @@
     var canvasWidthPx = advancePx + pad * 2
     var canvasHeightPx = Math.ceil(fontPx * LINE_BAND_EM) + pad * 2
 
-    var canvas = document.createElement('canvas')
-    canvas.width = canvasWidthPx
-    canvas.height = canvasHeightPx
-    var ctx = canvas.getContext('2d')
-    ctx.font = fontSpec
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'middle'
-    ctx.fillStyle = '#ffffff'
-    ctx.fillText(text, pad, canvasHeightPx / 2)
+    var texture = paintRaster(canvasWidthPx, canvasHeightPx, function (ctx) {
+      ctx.font = fontSpec
+      ctx.textAlign = 'left'
+      ctx.textBaseline = 'middle'
+      ctx.fillStyle = '#ffffff'
+      ctx.fillText(text, pad, canvasHeightPx / 2)
+    })
 
-    return { texture: makeTexture(canvas), canvasWidthPx: canvasWidthPx, canvasHeightPx: canvasHeightPx, advancePx: advancePx, fontPx: fontPx }
+    return { texture: texture, canvasWidthPx: canvasWidthPx, canvasHeightPx: canvasHeightPx, advancePx: advancePx, fontPx: fontPx }
   }
 
   // ═══════════ dioramaKeywordColor.ts 全文 ═══════════
