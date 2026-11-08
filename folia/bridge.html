@@ -814,6 +814,25 @@ var hostShowFullscreen=true;
 var hostNativeControls=false;
 var hostControlsInset=0;
 
+// 判断宿主是否为 macOS 平台；优先使用宿主上报的平台，init 未到达时退回 UA 同步检测。
+function isMacHostPlatform(){
+  if(hostPlatform)return hostPlatform==='darwin';
+  // init 消息到达前用 navigator 信息兜底，iframe 与宿主同源同 UA。
+  var nav=String(navigator.platform||'').toLowerCase();
+  return nav.indexOf('mac')>=0||/Macintosh|Mac OS X/.test(String(navigator.userAgent||''));
+}
+
+// 根据平台检测结果同步 body 上的 mac 平台标记 class，左上角关闭按钮据此避让红绿灯。
+function syncMacPlatformClass(){
+  try{
+    document.body.classList.toggle('folia-mac-platform',isMacHostPlatform());
+  }catch(error){
+    console.warn('[FoliaBridge] 平台标记同步失败',error);
+  }
+}
+// init 未到达前先用 UA 兜底对齐一次，避免 mac 上关闭按钮与红绿灯短暂重叠。
+syncMacPlatformClass();
+
 function createWindowControls(){
   var container=document.getElementById('win-controls');
   container.innerHTML='';
@@ -888,6 +907,7 @@ window.addEventListener('message',function(ev){
       hostShowFullscreen=init.hostControls?.showFullscreenButton!==false;
       hostNativeControls=init.hostControls?.nativeWindowControls===true;
       hostControlsInset=Number(init.hostControls?.windowControlsInset)||0;
+      syncMacPlatformClass();
       createWindowControls();
       // 应用宿主端保存的设置
       if(init.settings){
@@ -925,6 +945,7 @@ window.addEventListener('message',function(ev){
       hostShowFullscreen=hc.showFullscreenButton!==false;
       hostNativeControls=hc.nativeWindowControls===true;
       hostControlsInset=Number(hc.windowControlsInset)||0;
+      syncMacPlatformClass();
       createWindowControls();
       break;
     case'echo-folia:snapshot':

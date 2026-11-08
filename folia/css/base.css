@@ -361,6 +361,8 @@ html.folia-bg-transparent,html.folia-bg-transparent body{background:transparent}
 }
 .close-overlay-btn:hover{background:rgba(255,255,255,0.12);color:#fff;border-color:rgba(255,255,255,0.2)}
 .close-overlay-btn svg{width:16px;height:16px;display:block;stroke:currentColor;fill:none}
+/* macOS 红绿灯占据左上角，关闭按钮右移避让（与主程序 OverlayHeader 的 mac-offset 对齐） */
+body.folia-mac-platform .close-overlay-btn{left:80px}
 
 /* ===== 队列面板 ===== */
 .queue-panel{

@@ -198,6 +198,8 @@ function createPlayerFrame(ctx, closeOverlay) {
     setup() {
       const iframeRef = ref(null)
       const iframeSrc = ref('')
+      // macOS 下红绿灯与 iframe 内关闭按钮（left:80px）占据左上角，拖拽条需进一步右移避让。
+      const isMacPlatform = String(window.electron?.platform || '').toLowerCase() === 'darwin'
       const loadError = ref('')
       let ready = false
       let disposed = false
@@ -1008,7 +1010,12 @@ function createPlayerFrame(ctx, closeOverlay) {
             'aria-modal': 'true',
           },
           [
-            h('div', { class: 'folia-bridge-drag-strip' }),
+            // mac 下拖拽条加修饰 class，左边界右移避开红绿灯和 iframe 内关闭按钮，防止 drag 区域吞掉按钮点击。
+            h('div', {
+              class: isMacPlatform
+                ? 'folia-bridge-drag-strip folia-bridge-drag-strip--mac'
+                : 'folia-bridge-drag-strip',
+            }),
             iframeSrc.value
               ? h('iframe', {
                   ref: iframeRef,

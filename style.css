@@ -30,6 +30,10 @@ body.folia-overlay-open {
   background: transparent;
   -webkit-app-region: drag;
 }
+/* macOS 下关闭按钮右移至 left:80px（宽36px），拖拽条左边界随之移到按钮右侧，避免 drag 区域吞掉按钮点击 */
+.folia-bridge-drag-strip--mac {
+  left: 120px;
+}
 /* ===== 透明背景模式（iframe 上报 echo-folia:background-mode 时由 index.js 挂 folia-transparent-bg） ===== */
 /* 容器与 iframe 让出背景，透出宿主窗口的毛玻璃/透明材质 */
 body.folia-transparent-bg .folia-bridge-page,
