@@ -170,6 +170,9 @@
 <script src="runtime/theme.js"></script>
 <script src="runtime/lyrics-data.js"></script>
 <script src="runtime/tunings.js"></script>
+<script src="runtime/seed-hash.js"></script>
+<script src="runtime/theme-color-math.js"></script>
+<script src="runtime/beatfx.js"></script>
 <script src="runtime/subtitle-overlay.js"></script>
 <script src="runtime/registry.js"></script>
 <script src="backgrounds/paper-mount.js"></script>
@@ -355,6 +358,7 @@ function applyIntensity(theme){
   out.animationIntensity=currentIntensity;
   return out;
 }
+
 
 // 广播主题给当前模式与背景
 function broadcastTheme(){
@@ -624,13 +628,9 @@ function onSongMaybeChanged(){
   var key=songKeyOf();
   if(key!==lastSongKeyForTheme){
     lastSongKeyForTheme=key;
-    // 取色是异步的：先广播默认主题保证即时可用，取色完成后再广播新主题
-    currentTheme=applyIntensity(Object.assign({},window.FoliaTheme.DEFAULT_THEME));
-    broadcastTheme();
-    window.FoliaTheme.buildThemeFromCover(S.coverUrl).then(function(t){
-      currentTheme=applyIntensity(t);
-      broadcastTheme();
-    });
+    if(window.FoliaBeatFx){
+      window.FoliaBeatFx.resetForSong();
+    }
   }
   if(randomModePerSong&&key!==lastSongKeyForRandom){
     lastSongKeyForRandom=key;
@@ -1357,6 +1357,9 @@ var lastWrittenPct=-1;
 function tick(now){
   var dt=lastFrameNow?Math.min((now-lastFrameNow)/1000,0.05):1/60;
   lastFrameNow=now;
+  if(window.FoliaBeatFx){
+    window.FoliaBeatFx.tick(effectiveLyricTimeMs()/1000,S.isPlaying);
+  }
   // 进度条/时间文本：始终使用真实播放时间（不受歌词时间矫正影响）
   var localT=getLocalTimeMs();
   if(S.durationMs>0){

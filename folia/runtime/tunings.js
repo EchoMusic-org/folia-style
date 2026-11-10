@@ -222,6 +222,177 @@
         ]}
       ]
     },
+    hanabi: {
+      label: '花火',
+      groups: [
+        { title: '烟花', keys: [
+          { key: 'sparkAmount', label: '火花数量', type: 'slider', min: 0, max: 2, step: 0.05, unit: 'x', default: 1 },
+          { key: 'glow', label: '烟花辉光', type: 'slider', min: 0, max: 2, step: 0.05, unit: 'x', default: 1 },
+          { key: 'chorusBloom', label: '副歌辉光', type: 'slider', min: 0, max: 2, step: 0.05, unit: 'x', default: 1.3 },
+          { key: 'bloom', label: '整体辉光', type: 'slider', min: 0, max: 2, step: 0.05, unit: 'x', default: 0.8 },
+          { key: 'launches', label: '升空尾迹', type: 'switch', default: true }
+        ]},
+        { title: '画面', keys: [
+          { key: 'sky', label: '夜空', type: 'slider', min: 0, max: 1, step: 0.01, unit: 'percent', default: 0.85 },
+          { key: 'riseSpeed', label: '上升', type: 'slider', min: 0, max: 2, step: 0.05, unit: 'x', default: 1 },
+          { key: 'spin', label: '旋转', type: 'slider', min: 0, max: 2, step: 0.05, unit: 'x', default: 1 },
+          { key: 'ambient', label: '环境火星', type: 'slider', min: 0, max: 2, step: 0.05, unit: 'x', default: 1 },
+          { key: 'overlayFrame', label: '画框', type: 'switch', default: true }
+        ]},
+        { title: '文字', keys: [
+          { key: 'textOnly', label: '仅显示歌词文字', type: 'switch', default: false },
+          { key: 'textMotion', label: '文字动作', type: 'slider', min: 0, max: 2, step: 0.05, unit: 'x', default: 1 },
+          { key: 'blockOpacity', label: '字底色块', type: 'slider', min: 0, max: 1, step: 0.01, unit: 'percent', default: 1 }
+        ]},
+        { title: '装饰', keys: [
+          { key: 'collage', label: 'PV 拼贴', type: 'slider', min: 0, max: 2, step: 0.05, unit: 'x', default: 1 },
+          { key: 'ornamentAmount', label: 'MG 装饰件', type: 'slider', min: 0, max: 2, step: 0.05, unit: 'x', default: 1 }
+        ]},
+        { title: '配色与性能', keys: [
+          { key: 'colorMode', label: '配色', type: 'picture', options: [
+            { value: 'mixed', label: '混合' }, { value: 'vivid', label: '鲜艳' }, { value: 'theme', label: '主题' }
+          ], default: 'mixed' },
+          { key: 'renderQuality', label: '画质', type: 'segmented', options: [
+            { value: 'full', label: '全分辨率' }, { value: 'balanced', label: '均衡' }, { value: 'low', label: '省电' }
+          ], default: 'full' }
+        ]}
+      ]
+    },
+    nebbia: {
+      label: '雾笺',
+      groups: [
+        { title: '窗外显示', keys: [
+          { key: 'behind', label: '窗外', type: 'picture', options: [
+            { value: 'night', label: '雨夜街景' }, { value: 'aquarium', label: '梦海流萤' }, { value: 'backdrop', label: '背景' }
+          ], default: 'night' },
+          { key: 'jellies', label: '水母数量', type: 'slider', min: 0, max: 24, step: 1, integer: true, default: 16, sub: true, visibleWhen: { key: 'behind', eq: 'aquarium' } },
+          { key: 'jellySize', label: '水母大小', type: 'slider', min: 0.5, max: 1.8, step: 0.05, unit: 'x', default: 1, sub: true, visibleWhen: { key: 'behind', eq: 'aquarium' } },
+          { key: 'bubbles', label: '气泡多少', type: 'slider', min: 0, max: 1, step: 0.05, unit: 'percent', default: 0.6, sub: true, visibleWhen: { key: 'behind', eq: 'aquarium' } },
+          { key: 'scenery', label: '街景', type: 'multi', options: [
+            { value: 'spot', label: '聚光灯' }, { value: 'buildings', label: '楼群' },
+            { value: 'lights', label: '光斑' }, { value: 'cars', label: '车灯' }, { value: 'road', label: '马路' }
+          ], default: ['spot', 'buildings', 'lights', 'cars', 'road'], visibleWhen: { key: 'behind', neq: 'aquarium' } },
+          { key: 'rain', label: '窗外的雨', type: 'segmented', options: [
+            { value: 'slant', label: '斜着' }, { value: 'straight', label: '竖直' }, { value: 'off', label: '不下' }
+          ], default: 'slant', visibleWhen: { key: 'behind', neq: 'aquarium' } }
+        ]},
+        { title: '雾上写字', keys: [
+          { key: 'strokeWidth', label: '笔画粗细', type: 'slider', min: 0.04, max: 0.16, step: 0.005, default: 0.09 },
+          { key: 'writeSpeed', label: '书写速度', type: 'slider', min: 0.4, max: 2.5, step: 0.05, unit: 'x', default: 1 },
+          { key: 'jitter', label: '手写歪斜', type: 'slider', min: 0, max: 1.5, step: 0.05, unit: 'x', default: 0.6 },
+          { key: 'warp', label: '手写变形', type: 'slider', min: 0, max: 1.5, step: 0.05, unit: 'x', default: 0.6 },
+          { key: 'doodle', label: '句尾画图标', type: 'slider', min: 0, max: 1, step: 0.05, unit: 'percent', default: 0.3 },
+          { key: 'mist', label: '雾气浓度', type: 'slider', min: 0.2, max: 1, step: 0.01, unit: 'percent', default: 0.75 },
+          { key: 'hold', label: '下一句开始后保持', type: 'slider', min: 0, max: 6, step: 0.1, default: 1.2 },
+          { key: 'refog', label: '重新起雾用时', type: 'slider', min: 0.5, max: 12, step: 0.5, default: 4 },
+          { key: 'credits', label: '片尾写曲名和歌手', type: 'switch', default: true }
+        ]},
+        { title: '出现与消失', keys: [
+          { key: 'appear', label: '出现', type: 'multi', options: [
+            { value: 'write', label: '手指书写' }, { value: 'fade', label: '慢慢显现' }, { value: 'breath', label: '哈气后书写' }
+          ], default: ['write', 'fade'] },
+          { key: 'fade', label: '消失', type: 'multi', options: [
+            { value: 'fog', label: '慢慢起雾' }, { value: 'fingers', label: '手指抹掉' }
+          ], default: ['fog'] }
+        ]},
+        { title: '构图', keys: [
+          { key: 'layouts', label: '构图', type: 'multi', options: [
+            { value: 'ribbon', label: '横条' }, { value: 'lines2', label: '两行错落' }, { value: 'lines3', label: '三行错落' },
+            { value: 'cross', label: '十字' }, { value: 'pillar', label: '竖柱' }, { value: 'header', label: '刊头' },
+            { value: 'badge', label: '徽章' }, { value: 'columns', label: '竖排几列' }, { value: 'orbit', label: '环绕' }
+          ], default: ['ribbon', 'lines2', 'lines3', 'cross', 'pillar', 'header', 'badge', 'columns', 'orbit'] }
+        ]},
+        { title: '车窗与街景', keys: [
+          { key: 'busSpeed', label: '车速', type: 'slider', min: 0, max: 3, step: 0.05, unit: 'x', default: 1 },
+          { key: 'neon', label: '霓虹', type: 'slider', min: 0, max: 2, step: 0.05, unit: 'x', default: 1 },
+          { key: 'bump', label: '颠簸', type: 'slider', min: 0, max: 2.5, step: 0.05, unit: 'x', default: 1, visibleWhen: { key: 'behind', neq: 'aquarium' } },
+          { key: 'spot', label: '聚光灯', type: 'slider', min: 0, max: 2, step: 0.05, unit: 'x', default: 0.5 },
+          { key: 'spotX', label: '聚光灯位置', type: 'slider', min: 0, max: 1, step: 0.01, unit: 'percent', default: 0.8 }
+        ]},
+        { title: '前面的玻璃', keys: [
+          { key: 'glass', label: '玻璃', type: 'picture', options: [
+            { value: 'rain', label: '雨窗' }, { value: 'dew', label: '凝露' }, { value: 'snow', label: '融雪' }
+          ], default: 'rain' },
+          { key: 'rainHit', label: '雨点打在玻璃上', type: 'slider', min: 0, max: 3, step: 0.05, unit: 'x', default: 1, sub: true, visibleWhen: { key: 'glass', eq: 'rain' } },
+          { key: 'rainBig', label: '吐字时的大雨点', type: 'slider', min: 0, max: 2, step: 0.05, unit: 'x', default: 1, sub: true, visibleWhen: { key: 'glass', eq: 'rain' } },
+          { key: 'dew', label: '冷凝水珠多少', type: 'slider', min: 0, max: 1.5, step: 0.05, unit: 'x', default: 1, sub: true, visibleWhen: { key: 'glass', eq: 'dew' } },
+          { key: 'dewSize', label: '冷凝水珠大小', type: 'slider', min: 0.5, max: 2, step: 0.05, unit: 'x', default: 1, sub: true, visibleWhen: { key: 'glass', eq: 'dew' } },
+          { key: 'dewGlint', label: '冷凝水珠高光', type: 'slider', min: 0, max: 2, step: 0.05, unit: 'x', default: 1, sub: true, visibleWhen: { key: 'glass', eq: 'dew' } },
+          { key: 'snow', label: '雪多少', type: 'slider', min: 0, max: 3, step: 0.05, unit: 'x', default: 1, sub: true, visibleWhen: { key: 'glass', eq: 'snow' } },
+          { key: 'snowSize', label: '雪花大小', type: 'slider', min: 0.5, max: 2, step: 0.05, unit: 'x', default: 1, sub: true, visibleWhen: { key: 'glass', eq: 'snow' } },
+          { key: 'snowMelt', label: '雪化得多快', type: 'slider', min: 0.25, max: 3, step: 0.05, unit: 'x', default: 1, sub: true, visibleWhen: { key: 'glass', eq: 'snow' } }
+        ]}
+      ]
+    },
+    machi: {
+      label: '町景',
+      groups: [
+        { title: '场景', keys: [
+          { key: 'scene', label: '场景', type: 'picture', options: [
+            { value: 'auto', label: '自动' }, { value: 'konbini', label: '便利店' },
+            { value: 'station', label: '加油站' }, { value: 'kowloon', label: '城寨酒吧' }
+          ], default: 'auto' }
+        ]},
+        { title: '时间与天气', keys: [
+          { key: 'timeOfDay', label: '时间', type: 'segmented', options: [
+            { value: 'auto', label: '自动' }, { value: 'day', label: '白天' },
+            { value: 'dusk', label: '黄昏' }, { value: 'night', label: '夜间' }
+          ], default: 'auto' },
+          { key: 'weather', label: '天气', type: 'segmented', options: [
+            { value: 'auto', label: '自动' }, { value: 'clear', label: '晴' },
+            { value: 'rain', label: '雨' }, { value: 'snow', label: '雪' }, { value: 'fog', label: '雾' }
+          ], default: 'auto' }
+        ]},
+        { title: '灯光', keys: [
+          { key: 'simulatedBeat', label: '模拟节拍', type: 'switch', default: true }
+        ]},
+        { title: '镜头', keys: [
+          { key: 'camera', label: '视角', type: 'segmented', options: [
+            { value: 'default', label: '默认视角' }, { value: 'custom', label: '自定义视角' }
+          ], default: 'default' },
+          // 自定义视角（每场景各一份；画面上拖拽 / 右键平移后停稳会自动写回对应场景）
+          { key: 'views.konbini.azimuth', label: '便利店 · 水平转角', type: 'slider', min: -75, max: 75, step: 1, unit: 'deg', default: 0, sub: true, visibleWhen: { key: 'camera', eq: 'custom' } },
+          { key: 'views.konbini.elevation', label: '便利店 · 俯仰', type: 'slider', min: -12, max: 40, step: 1, unit: 'deg', default: 0, sub: true, visibleWhen: { key: 'camera', eq: 'custom' } },
+          { key: 'views.konbini.zoom', label: '便利店 · 远近', type: 'slider', min: 0.5, max: 2.8, step: 0.05, unit: 'x', default: 1, sub: true, visibleWhen: { key: 'camera', eq: 'custom' } },
+          { key: 'views.station.azimuth', label: '加油站 · 水平转角', type: 'slider', min: -75, max: 75, step: 1, unit: 'deg', default: 0, sub: true, visibleWhen: { key: 'camera', eq: 'custom' } },
+          { key: 'views.station.elevation', label: '加油站 · 俯仰', type: 'slider', min: -12, max: 40, step: 1, unit: 'deg', default: 0, sub: true, visibleWhen: { key: 'camera', eq: 'custom' } },
+          { key: 'views.station.zoom', label: '加油站 · 远近', type: 'slider', min: 0.5, max: 2.8, step: 0.05, unit: 'x', default: 1, sub: true, visibleWhen: { key: 'camera', eq: 'custom' } },
+          { key: 'views.kowloon.azimuth', label: '城寨酒吧 · 水平转角', type: 'slider', min: -75, max: 75, step: 1, unit: 'deg', default: 0, sub: true, visibleWhen: { key: 'camera', eq: 'custom' } },
+          { key: 'views.kowloon.elevation', label: '城寨酒吧 · 俯仰', type: 'slider', min: -12, max: 40, step: 1, unit: 'deg', default: 0, sub: true, visibleWhen: { key: 'camera', eq: 'custom' } },
+          { key: 'views.kowloon.zoom', label: '城寨酒吧 · 远近', type: 'slider', min: 0.5, max: 2.8, step: 0.05, unit: 'x', default: 1, sub: true, visibleWhen: { key: 'camera', eq: 'custom' } },
+          { key: 'motion', label: '运镜', type: 'switch', default: false },
+          { key: 'motionSpeed', label: '运镜速度', type: 'slider', min: 0.25, max: 3, step: 0.05, unit: 'x', default: 1, sub: true, visibleWhen: { key: 'motion', eq: true } }
+        ]},
+        { title: '景深', keys: [
+          { key: 'aperture', label: '光圈', type: 'slider', min: 1.4, max: 16, step: 0.1, default: 8 },
+          { key: 'dof', label: '景深强度', type: 'slider', min: 0, max: 2, step: 0.05, unit: 'x', default: 1 },
+          { key: 'dofRange', label: '清晰范围', type: 'slider', min: 0.3, max: 3, step: 0.05, unit: 'x', default: 1 },
+          { key: 'tiltShift', label: '移轴', type: 'slider', min: 0, max: 1, step: 0.05, unit: 'percent', default: 0.3 },
+          { key: 'focus', label: '对焦', type: 'segmented', options: [
+            { value: 'center', label: '画面中心' }, { value: 'lyrics', label: '歌词屏' }, { value: 'manual', label: '手动' }
+          ], default: 'center' },
+          { key: 'focusOffset', label: '对焦前后', type: 'slider', min: -10, max: 10, step: 0.1, default: 0, sub: true, visibleWhen: { key: 'focus', eq: 'manual' } }
+        ]},
+        { title: '画质', keys: [
+          // 插件无全局歌词画布挡位：「跟随全局」按 1 倍 + SMAA 解释（上游高档默认）
+          { key: 'quality.renderScale', label: '分辨率', type: 'segmented', options: [
+            { value: 'global', label: '跟随全局' }, { value: 1, label: '100%' }, { value: 0.75, label: '75%' }, { value: 0.5, label: '50%' }
+          ], default: 'global' },
+          { key: 'quality.antialias', label: '抗锯齿', type: 'segmented', options: [
+            { value: 'global', label: '跟随全局' }, { value: 'off', label: '关' }, { value: 'fxaa', label: 'FXAA' },
+            { value: 'smaa', label: 'SMAA' }, { value: 'ssaa', label: '超采样' }
+          ], default: 'global' },
+          { key: 'quality.shadows', label: '阴影', type: 'segmented', options: [
+            { value: 'off', label: '关' }, { value: 'low', label: '低' }, { value: 'high', label: '高' }
+          ], default: 'high' },
+          { key: 'quality.reflections', label: '倒影', type: 'segmented', options: [
+            { value: 'off', label: '关' }, { value: 'low', label: '低' }, { value: 'high', label: '高' }
+          ], default: 'high' },
+          { key: 'quality.glow', label: '辉光', type: 'switch', default: true },
+          { key: 'quality.adaptive', label: '自动降级', type: 'switch', default: true }
+        ]}
+      ]
+    },
     claddagh: {
       label: '回环',
       groups: [
@@ -308,7 +479,7 @@
         ]}
       ]
     }
-    // still（静止）无调参项；hanabi/machi/nebbia 上游样式未移植
+    // still（静止）无调参项
   }
 
   // ===== 背景 schema =====
@@ -483,6 +654,15 @@
         if (value === null) value = spec.default
       } else if (spec.type === 'color') {
         value = typeof raw === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(raw) ? raw : spec.default
+      } else if (spec.type === 'multi') {
+        // 多选：只留认得的值、按 options 顺序；空数组回默认
+        var picked = []
+        if (Array.isArray(raw)) {
+          spec.options.forEach(function (option) {
+            if (raw.indexOf(option.value) >= 0) picked.push(option.value)
+          })
+        }
+        value = picked.length ? picked : spec.default.slice()
       } else if (spec.type === 'array') {
         value = Array.isArray(raw) ? raw : spec.default
       } else {

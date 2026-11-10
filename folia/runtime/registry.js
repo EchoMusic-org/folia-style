@@ -75,6 +75,92 @@
       'modes/lumiere/lumiere-scene.js',
       'modes/lumiere.js'
     ], globalName: 'FoliaModeLumiere', vendor: ['pixi', 'pretext'], order: 25, majorId: 'lumiere' },
+    // 花火为大体量 Pixi 模式（移植自 folia-major hanabi/），拆为 hanabi/ 下多模块
+    { id: 'hanabi', legacyIds: [], label: '花火', file: [
+      'modes/hanabi/hanabi-core.js',
+      'modes/hanabi/hanabi-catalog.js',
+      'modes/hanabi/hanabi-program.js',
+      'modes/hanabi/hanabi-timeline.js',
+      'modes/hanabi/hanabi-transitions.js',
+      'modes/hanabi/hanabi-color.js',
+      'modes/hanabi/hanabi-bloom.js',
+      'modes/hanabi/hanabi-textures.js',
+      'modes/hanabi/hanabi-burstplan.js',
+      'modes/hanabi/hanabi-fireworks.js',
+      'modes/hanabi/hanabi-glow.js',
+      'modes/hanabi/hanabi-ambient.js',
+      'modes/hanabi/hanabi-ornaments-kit.js',
+      'modes/hanabi/hanabi-ornaments-lines.js',
+      'modes/hanabi/hanabi-ornaments-particles.js',
+      'modes/hanabi/hanabi-ornaments-shapes.js',
+      'modes/hanabi/hanabi-ornaments.js',
+      'modes/hanabi/hanabi-text-glyphs.js',
+      'modes/hanabi/hanabi-text-layout.js',
+      'modes/hanabi/hanabi-text-blocks.js',
+      'modes/hanabi/hanabi-text-animations.js',
+      'modes/hanabi/hanabi-text.js',
+      'modes/hanabi/hanabi-collage-plan.js',
+      'modes/hanabi/hanabi-collage-painters.js',
+      'modes/hanabi/hanabi-collage-views.js',
+      'modes/hanabi/hanabi-collage-unit.js',
+      'modes/hanabi/hanabi-scene.js',
+      'modes/hanabi/hanabi-credits.js',
+      'modes/hanabi/hanabi-overlay.js',
+      'modes/hanabi/hanabi-beatfx.js',
+      'modes/hanabi/hanabi-runtime.js',
+      'modes/hanabi.js'
+    ], globalName: 'FoliaModeHanabi', vendor: ['pixi'], order: 26, majorId: 'hanabi' },
+    // 雾笺为原生 WebGL2 模式（移植自 folia-major nebbia/，不依赖 vendor 库）
+    { id: 'nebbia', legacyIds: [], label: '雾笺', file: [
+      'modes/nebbia/nebbia-core.js',
+      'modes/nebbia/nebbia-glsl.js',
+      'modes/nebbia/nebbia-glyphs.js',
+      'modes/nebbia/nebbia-chars.js',
+      'modes/nebbia/nebbia-layout.js',
+      'modes/nebbia/nebbia-scene.js',
+      'modes/nebbia/nebbia-drops.js',
+      'modes/nebbia/nebbia-mask.js',
+      'modes/nebbia/nebbia-glass.js',
+      'modes/nebbia/nebbia-snow.js',
+      'modes/nebbia/nebbia-aquarium.js',
+      'modes/nebbia/nebbia-gl.js',
+      'modes/nebbia.js'
+    ], globalName: 'FoliaModeNebbia', vendor: [], order: 27, majorId: 'nebbia' },
+    // 町景为大体量 three 模式（移植自 folia-major machi/），拆为 machi/ 下多模块 + 3 个场景
+    { id: 'machi', legacyIds: [], label: '町景', file: [
+      'modes/machi/machi-types.js',
+      'modes/machi/machi-clock.js',
+      'modes/machi/machi-lens.js',
+      'modes/machi/machi-palette.js',
+      'modes/machi/machi-shaders.js',
+      'modes/machi/machi-sky.js',
+      'modes/machi/machi-signraster.js',
+      'modes/machi/machi-geometry.js',
+      'modes/machi/machi-ledstrip.js',
+      'modes/machi/machi-materials.js',
+      'modes/machi/machi-camera.js',
+      'modes/machi/machi-director.js',
+      'modes/machi/machi-environment.js',
+      'modes/machi/machi-quality.js',
+      'modes/machi/machi-beatfx.js',
+      'modes/machi/machi-boardlayout.js',
+      'modes/machi/machi-lyricscreen.js',
+      'modes/machi/machi-fx-ground.js',
+      'modes/machi/machi-fx-reflection.js',
+      'modes/machi/machi-fx-weather.js',
+      'modes/machi/machi-fx-lights.js',
+      'modes/machi/machi-skylights.js',
+      'modes/machi/machi-actors.js',
+      'modes/machi/machi-fx-post.js',
+      'modes/machi/machi-runtime.js',
+      'modes/machi/scene-konbini-paint.js',
+      'modes/machi/scene-konbini.js',
+      'modes/machi/scene-kowloon-paint.js',
+      'modes/machi/scene-kowloon.js',
+      'modes/machi/scene-station.js',
+      'modes/machi/machi-scenes.js',
+      'modes/machi.js'
+    ], globalName: 'FoliaModeMachi', vendor: ['three'], order: 28, majorId: 'machi' },
     { id: 'classic', legacyIds: ['liuguang'], label: '流光', file: 'modes/classic.js', globalName: 'FoliaModeClassic', vendor: [], order: 30, majorId: 'classic' },
     { id: 'cadenza', legacyIds: ['xinxiang'], label: '心象', file: 'modes/cadenza.js', globalName: 'FoliaModeCadenza', vendor: ['pretext'], order: 40, majorId: 'cadenza' },
     { id: 'partita', legacyIds: ['yunjie'], label: '云阶', file: 'modes/partita.js', globalName: 'FoliaModePartita', vendor: [], order: 50, majorId: 'partita' },
@@ -215,7 +301,7 @@
     if (!factory || typeof factory.create !== 'function') {
       throw new Error('模式缺少工厂: ' + def.globalName)
     }
-    var instance = factory.create(config ? config.tuning : undefined)
+    var instance = factory.create(config ? config.tuning : undefined, config)
     instance.id = def.id
     instance.mount(hostEl)
     if (config) {

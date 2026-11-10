@@ -227,7 +227,7 @@
     return el('div', 'fsw-group-title', text)
   }
 
-  // ===== schema 页渲染器 =====
+
   // schema: { groups:[{ title, keys:[spec] }] }，spec 来自 FoliaTunings
   // get(key) 读当前值；patch(key, value, commit) 写入（draft 或 commit）
   // 返回 { root, refresh }：refresh 重读全部控件值（外部状态变化时同步）
@@ -271,8 +271,7 @@
             onDraft: function (v) { api.patch(spec.key, v, false) },
             onChange: function (v) { api.patch(spec.key, v, true) }
           })
-        }
-        if (!control) return
+        }        if (!control) return
         var rowEl = row(spec.label, control.root, { sub: spec.sub })
         card.appendChild(rowEl)
         controls.push({ spec: spec, control: control, rowEl: rowEl })

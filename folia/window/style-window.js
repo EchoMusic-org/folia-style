@@ -332,6 +332,7 @@
       classic: { rotate: 0 }, cadenza: { italic: true }, partita: { stagger: 4 },
       fume: { serif: true }, tilt: { tilt: true }, monet: { frame: true },
       sonnet: { thin: true }, tempera: { blocks: true }, lumiere: { glow: true },
+      hanabi: { burst: true }, nebbia: { fog: true }, machi: { frame: true },
       claddagh: { ring: true }, pendolo: { arc: true }, cappella: { dots: true },
       diorama: { depth: true }, still: { flat: true }
     }
@@ -624,6 +625,7 @@
     colBody.appendChild(Kit.groupTitle((schema ? schema.label : modeId) + '参数'))
     if (!schema || !schema.groups.length) {
       colBody.appendChild(Kit.el('div', 'fsw-empty-hint', '这个样式没有参数'))
+      tabRefreshers.visualizer = function () { renderTab() }
       return
     }
     draftTuning = tunings().getModeTuning(modeId)
@@ -651,13 +653,6 @@
     })
     colBody.appendChild(renderer.root)
     tabRefreshers.visualizer = function () { renderTab() }
-  }
-
-  // 单键 patch（点路径）：交给 FoliaTunings 的 merge 归一化
-  function setPathPatch(key, value) {
-    var patch = {}
-    setPath(patch, key, value)
-    return patch
   }
 
   // ===== 背景页 =====
@@ -990,7 +985,6 @@
     plus.addEventListener('click', function () { bridge().setLyricTimeOffset(offset + 0.1) })
     timeCard.appendChild(Kit.row('时间矫正', stepper, { hint: '+ 提前 / − 延后，仅影响歌词时间轴' }))
     colBody.appendChild(timeCard)
-    tabRefreshers.global = function () { renderTab() }
   }
 
   function formatOffset(v) {
@@ -1082,6 +1076,6 @@
     onAppearanceChange: function () {
       if (!state.open) return
       if (state.tab === 'common') renderTab()
-    }
+    },
   }
 })()

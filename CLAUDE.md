@@ -152,10 +152,15 @@ iframe → 宿主（`bridge.html` 内 `parent.postMessage`）：
 
 - **draft/commit 语义**：滑条 input 只更新 draft 并经 `setTuning` 热更舞台实例（实时反馈），change（松手）才写 localStorage 并应用到主页面；不支持热更的模式松手后重建舞台与主页面实例。网格/开关/分段即时 commit。
 - **缩略图**：canvas 2D 简化绘制（主题底色 + 示例文字 + 按样式特征微调），随主题变化缓存失效；不做逐样式真实渲染（避免 14 组 pixi/three 并行）。
-- **明确不做**：智能动感/beat effects、字体样式选择与自定义字体（字体族跟随宿主）、`render` 分辨率覆盖、上游 hanabi/machi/nebbia 三个未移植样式、画布图片上传池（tempera layerImages）、背景自定义图片上传。
-- **已知取舍**：cappella 头像来源对已渲染消息不回溯；字幕内容（翻译/罗马音）跟随宿主歌词页设置（iframe 内 secondary 为混合值，不可拆分）；字重全局覆盖仅接 classic/cadenza/partita/tilt/claddagh 五个模式。
+- **明确不做**：字体样式选择与自定义字体（字体族跟随宿主）、画布图片上传池（tempera layerImages）、背景自定义图片上传。
+- **已知取舍**：cappella 头像来源对已渲染消息不回溯；字幕内容（翻译/罗马音）跟随宿主歌词页设置（iframe 内 secondary 为混合值，不可拆分）；字重全局覆盖仅接 classic/cadenza/partita/tilt/claddagh 五个模式（machi/花火/雾笺按上游 ownFontSize 自动排版不接）。
 
-## 兼容与遗留
+## 上游样式移植（町景）
+
+均整只移植自 folia-major（React+TS+Pixi/three/原生 WebGL2 → 原生 JS IIFE 模块目录 + 单入口），全部配置项开放（`runtime/tunings.js` schema 与上游 SettingsPanel/zh-CN 文案逐项对齐）。
+
+- **町景 machi**（`folia/modes/machi/` 24 模块 + `scene-konbini/kowloon/station.js` 三场景 + `modes/machi.js`，vendor three）：正交 3D 微缩街景（三个场景按歌 seed 自动选），天空/天光/天气（雨雪雾/昼夜渐变）/湿地面（水洼+倒影+雨点闪光）/积雪/招牌（LED 屏逐字点亮、霓虹、のぼり旗、跑马灯）/车流/光柱/白气/后处理（墨线、贴地雾、bloom、横向光条、散景景深、色差暗角颗粒、FXAA）。画质六项（分辨率/抗锯齿/阴影/倒影/辉光/自动降级）全接；SMAA 档降级为 FXAA（vendor three 未含 examples，超采样不受影响）；取景控制条不移植（画布直接拖拽/右键平移/滚轮缩放，自定义视角松手停稳自动写回 tuning 对应场景）。
+- **共享底座**（`folia/runtime/`）：`seed-hash.js`（FNV-1a/mulberry32，上游 visualizerSeedHash）、`theme-color-math.js`（hex 色彩数学）、`beatfx.js`（智能动感：上游 clock.ts 节拍时钟 + 主程序频谱实时节拍/鼓点检测，见「智能动感」节）。MotionValue → tick 每帧注入数值；songCommit 简化为歌词签名 + 2s 纯音乐确认；programWarmup/预热不移植（首帧编译开销一次性）；上游全局歌词画布画质挡位（`render: 'global'`）按 1 倍 + 关/默认抗锯齿解释；lucide 图标走内嵌线稿兜底（`Raster.MACHI_ICONS` 等）；销毁纪律照上游（v8 Graphics 逐节点无参 destroy、纹理 destroy(true)、retired 逐帧释放）。
 
 - `LEGACY_PAGE_PATH = '/main/plugin/folia-style/player'`：旧版本插件曾以路由页承载，现在检测到就 replace 到 `/main/home` 并弹覆盖层。删/改这个字符串前搜一下 EchoMusic 主仓有没有链接进来。
 - 覆盖层通过监听 `stores.player.isLyricViewOpen` 触发；`closeOverlay` 会把它设回 false，两个方向都要保持同步，否则宿主播放器抽屉状态会漂移。
