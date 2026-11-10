@@ -22,10 +22,9 @@
   var RenderHints = window.FoliaRenderHints
   var Runtime = window.FoliaVisualizerRuntime
 
-  // ---------- 原版 types.ts：DEFAULT_CAPPELLA_TUNING（插件无调参入口，内联） ----------
-  // 原版默认 avatarSource: 'cover'（用专辑封面作头像）；插件按需求固定使用内置头像库
+  // ---------- 原版 types.ts：DEFAULT_CAPPELLA_TUNING（内联） ----------
+  // 原版默认 avatarSource: 'cover'（用专辑封面作头像）；插件按需求默认使用内置头像库
   var DEFAULT_CAPPELLA_TUNING = { showEmoMessages: true, emojiPackSource: 'builtin', avatarSource: 'builtin' }
-  var TUNING = DEFAULT_CAPPELLA_TUNING
 
   // ---------- 原版 VisualizerCappella 顶部常量 ----------
   var SHORT_LINE_CHAR_LIMIT = 12
@@ -692,7 +691,9 @@
   }
 
   // ---------- 模式实例 ----------
-  function createMode() {
+  function createMode(config) {
+    // tuning 为实例级（预览舞台与主页面可能同时运行本模式）；消息构建时读取，新消息生效
+    var TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('cappella', config)) || DEFAULT_CAPPELLA_TUNING
     var host = null
     var rootEl = null      // 模式根容器（z-index 10，独占歌词层）
     var outerEl = null     // 原版 showText 外层容器（响应式 padding 由注入 CSS 处理）
@@ -1942,6 +1943,10 @@
       setTheme: setTheme,
       setLines: setLines,
       setFontScale: setFontScale,
+      // 热更样式参数（表情开关/头像来源在消息构建时读取，新消息生效；已渲染消息不回溯）
+      setTuning: function (partial) {
+        if (partial) TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('cappella', partial)) || TUNING
+      },
       tick: tick,
       destroy: destroy
     }

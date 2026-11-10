@@ -14,7 +14,7 @@
   var LyricsData = window.FoliaLyricsData
 
   // 原版 DEFAULT_CLADDAGH_TUNING
-  var TUNING = { focusScaleRatio: 0.65, radiusScale: 1.0, ellipseTiltDeg: 45, showAxisLine: true, letterSpacingOffset: 0 }
+  var DEFAULT_CLADDAGH_TUNING = { focusScaleRatio: 0.65, radiusScale: 1.0, ellipseTiltDeg: 45, showAxisLine: true, letterSpacingOffset: 0 }
 
   var CLADDAGH_MAX_ARC_SPAN = 4.25
   var CLADDAGH_LETTER_SPACING_EM = 0.04
@@ -268,7 +268,9 @@
     return clamp(fractionalIndex / Math.max(1, spacingInfo.length - 1), 0, 1)
   }
 
-  function createMode() {
+  function createMode(config) {
+    // tuning 为实例级（预览舞台与主页面可能同时运行本模式）；全部键每帧/每行读取，支持热更
+    var TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('claddagh', config)) || DEFAULT_CLADDAGH_TUNING
     var host = null
     var containerEl = null
     var ringHost = null
@@ -339,9 +341,10 @@
 
     function resolveThemeFontWeight(fallback) {
       if (theme && typeof theme.fontWeight === 'number' && Number.isFinite(theme.fontWeight)) {
-        return Math.min(900, Math.max(100, Math.round(theme.fontWeight / 10) * 10))
+        var themed = Math.min(900, Math.max(100, Math.round(theme.fontWeight / 10) * 10))
+        return window.foliaGetLyricFontWeight ? window.foliaGetLyricFontWeight(themed) : themed
       }
-      return fallback
+      return window.foliaGetLyricFontWeight ? window.foliaGetLyricFontWeight(fallback) : fallback
     }
 
     function normalizePower(power) {
@@ -429,6 +432,8 @@
       var scaleX = 1.0 + bassSqr * 1.5
       var scaleY = 1.0 + bassSqr * 0.5
       axisLineEl.style.transform = 'translate(-50%, -50%) rotate(' + (90 - TUNING.ellipseTiltDeg) + 'deg) scale(' + scaleX + ', ' + scaleY + ')'
+      // showAxisLine（原版"中间轴线"开关）：关闭时隐藏轴线
+      axisLineEl.style.display = TUNING.showAxisLine === false ? 'none' : ''
 
       var targetIntensity = isChorus ? 1.0 : 0.0
       var diff = targetIntensity - glowIntensity
@@ -796,6 +801,10 @@
       setTheme: setTheme,
       setLines: setLines,
       setFontScale: function (s) { fontScale = s === undefined ? 1 : s },
+      // 热更样式参数（半径/倾斜/间距/轴线每帧读取；间距参与已排行的实测缓存，下一行生效）
+      setTuning: function (partial) {
+        if (partial) TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('claddagh', partial)) || TUNING
+      },
       tick: tick,
       destroy: destroy
     }

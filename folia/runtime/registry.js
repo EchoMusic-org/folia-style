@@ -1,6 +1,8 @@
 // 模式注册表：替代 bridge.html 中硬编码的 modeMap，对齐 folia-major 的 visualizer registry。
 // 13 种歌词动画模式；旧 localStorage id 自动映射到新 id。
-// 每个模式暴露统一生命周期：create() → { id, mount, setTheme, setLines, tick, destroy, [setFontScale] }
+// 每个模式暴露统一生命周期：
+//   create(tuning) → { id, mount, setTheme, setLines, tick, destroy, [setFontScale], [setTuning] }
+// create(tuning)：tuning 为归一化后的样式参数对象（undefined 时模式用内置默认），由设置窗口调参传入。
 (function () {
   'use strict'
 
@@ -175,7 +177,8 @@
         throw new Error('模式缺少工厂: ' + def.globalName)
       }
 
-      var instance = factory.create()
+      // tuning：样式参数（归一化后的完整对象），模式 create 内部自行与默认值合并
+      var instance = factory.create(sharedState ? sharedState.tuning : undefined)
       instance.id = def.id
       instance.mount(hostEl)
       if (sharedState) {
@@ -194,6 +197,37 @@
       return result
     } finally {
       loadingPromise = null
+    }
+  }
+
+  /**
+   * 创建预览实例（供样式设置窗口的示例舞台使用）：
+   * 加载 vendor + 模式脚本 → create(tuning) → 挂载到指定宿主。
+   * 与 switchMode 完全隔离：不触碰 activeMode/activeDef，脚本与 vendor 复用同一份缓存。
+   * 返回 { instance, destroy }；destroy 只销毁预览实例本身。
+   */
+  async function previewCreate(id, hostEl, config) {
+    var def = byId(resolveId(id))
+    if (!def) return Promise.reject(new Error('未知模式: ' + id))
+    await loadVendor(def.vendor)
+    await loadModeFiles(def.file)
+    var factory = window[def.globalName]
+    if (!factory || typeof factory.create !== 'function') {
+      throw new Error('模式缺少工厂: ' + def.globalName)
+    }
+    var instance = factory.create(config ? config.tuning : undefined)
+    instance.id = def.id
+    instance.mount(hostEl)
+    if (config) {
+      if (instance.setTheme && config.theme) instance.setTheme(config.theme)
+      if (instance.setLines && config.lines) instance.setLines(config.lines)
+      if (instance.setFontScale && config.fontScale !== undefined) instance.setFontScale(config.fontScale)
+    }
+    return {
+      instance: instance,
+      destroy: function () {
+        try { instance.destroy() } catch (e) { /* 预览销毁失败不阻塞 */ }
+      }
     }
   }
 
@@ -222,6 +256,7 @@
     byId: byId,
     resolveId: resolveId,
     switchMode: switchMode,
+    previewCreate: previewCreate,
     destroyActive: destroyActive,
     getActive: getActive,
     getModeOptions: getModeOptions,

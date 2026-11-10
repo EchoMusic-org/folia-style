@@ -1689,7 +1689,9 @@
   // ============================================================
   // 模式实例
   // ============================================================
-  function createMode() {
+  function createMode(config) {
+    // tuning 为实例级（预览舞台与主页面可能同时运行本模式）
+    var FUME_TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('fume', config)) || DEFAULT_FUME_TUNING
     var host = null
     var containerEl = null       // 模式根容器（独占背景，铺满 host）
     var canvasHostEl = null      // canvas 包装层（对应原版 motion.div，入场后 hasPrintedContent 时 scale 0.985 → 1）
@@ -1887,21 +1889,21 @@
 
     function resolvedFumeTuning() {
       return {
-        hidePrintSymbols: DEFAULT_FUME_TUNING.hidePrintSymbols,
-        disableGeometricBackground: DEFAULT_FUME_TUNING.disableGeometricBackground,
-        backgroundObjectOpacity: clamp(DEFAULT_FUME_TUNING.backgroundObjectOpacity, 0, 1),
-        textHoldRatio: clamp(DEFAULT_FUME_TUNING.textHoldRatio, 0, 1),
-        cameraTrackingMode: DEFAULT_FUME_TUNING.cameraTrackingMode,
-        cameraSpeed: clamp(DEFAULT_FUME_TUNING.cameraSpeed, 0.55, 1.85),
-        glowIntensity: clamp(DEFAULT_FUME_TUNING.glowIntensity, 0, 1.8),
-        heroScale: clamp(DEFAULT_FUME_TUNING.heroScale, 0.82, 1.32)
+        hidePrintSymbols: FUME_TUNING.hidePrintSymbols,
+        disableGeometricBackground: FUME_TUNING.disableGeometricBackground,
+        backgroundObjectOpacity: clamp(FUME_TUNING.backgroundObjectOpacity, 0, 1),
+        textHoldRatio: clamp(FUME_TUNING.textHoldRatio, 0, 1),
+        cameraTrackingMode: FUME_TUNING.cameraTrackingMode,
+        cameraSpeed: clamp(FUME_TUNING.cameraSpeed, 0.55, 1.85),
+        glowIntensity: clamp(FUME_TUNING.glowIntensity, 0, 1.8),
+        heroScale: clamp(FUME_TUNING.heroScale, 0.82, 1.32)
       }
     }
 
     // 原版 layoutFumeTuning = { ...DEFAULT, heroScale: resolved.heroScale }
     function layoutFumeTuning() {
       var tuning = resolvedFumeTuning()
-      return Object.assign({}, DEFAULT_FUME_TUNING, { heroScale: tuning.heroScale })
+      return Object.assign({}, FUME_TUNING, { heroScale: tuning.heroScale })
     }
 
     function hasPretext() {
@@ -3021,6 +3023,12 @@
       setTheme: setTheme,
       setLines: setLines,
       setFontScale: setFontScale,
+      // 热更样式参数：相机/文字停留等参与文章布局，更新后触发重建
+      setTuning: function (partial) {
+        if (!partial) return
+        FUME_TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('fume', partial)) || FUME_TUNING
+        scheduleArticleBuild()
+      },
       tick: tick,
       destroy: destroy
     }

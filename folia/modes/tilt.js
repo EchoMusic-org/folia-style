@@ -11,7 +11,7 @@
   var SentenceLayout = window.FoliaSentenceLayout
 
   // 原版 DEFAULT_TILT_TUNING
-  var TUNING = { splitProbability: 0.75, tiltStyleProbability: 0.35, colorScheme: 'default' }
+  var DEFAULT_TILT_TUNING = { splitProbability: 0.75, tiltStyleProbability: 0.35, colorScheme: 'default' }
 
   var CHAR_REF_LENGTH = 20
   var LOG_OFFSET = 4
@@ -187,7 +187,7 @@
   }
 
   // 倾诉布局：分句 + 随机 tilt 行 + 溢出处理
-  function buildTiltLayout(fullText, lineSeed, theme, fontScale) {
+  function buildTiltLayout(fullText, lineSeed, theme, fontScale, tuning) {
     var fontStack = fontFamily(theme)
     var viewportWidth = window.innerWidth
     var measureMaxPx = Math.max(viewportWidth * 0.06875, 5.625 * REM_PX * fontScale)
@@ -202,7 +202,7 @@
     if (isEllipsisOnly) {
       mergedSegments = [fullText]
     } else {
-      var numLines = determineLineCount(charCount, lineSeed, TUNING.splitProbability)
+      var numLines = determineLineCount(charCount, lineSeed, tuning.splitProbability)
       var layoutUnits = SentenceLayout.splitIntoSentences(fullText, numLines, lineSeed)
       mergedSegments = layoutUnits.map(function (u) { return u.text })
     }
@@ -211,7 +211,7 @@
     var candidates = []
     mergedSegments.forEach(function (_seg, i) {
       var lineRoll = seededRandom(lineSeed, 100 + i)
-      if (lineRoll < TUNING.tiltStyleProbability) candidates.push(i)
+      if (lineRoll < tuning.tiltStyleProbability) candidates.push(i)
     })
 
     var finalTiltIndex = -1
@@ -276,7 +276,7 @@
           })
           if (newSegments.length > 0) {
             var resplitTiltRoll = seededRandom(lineSeed, 300)
-            if (resplitTiltRoll < TUNING.tiltStyleProbability) {
+            if (resplitTiltRoll < tuning.tiltStyleProbability) {
               var picked = Math.floor(seededRandom(lineSeed, 301) * newSegments.length)
               newSegments[picked].isTilt = true
             }
@@ -314,7 +314,9 @@
     return { segments: markShortLastLine(segments), scaleMultiplier: scaleMultiplier }
   }
 
-  function createMode() {
+  function createMode(config) {
+    // tuning 为实例级（预览舞台与主页面可能同时运行本模式）
+    var TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('tilt', config)) || DEFAULT_TILT_TUNING
     var host = null
     var layerEl = null
     var lineContainer = null
@@ -364,9 +366,10 @@
 
     function resolveThemeFontWeight(theme, fallback) {
       if (theme && typeof theme.fontWeight === 'number' && Number.isFinite(theme.fontWeight)) {
-        return Math.min(900, Math.max(100, Math.round(theme.fontWeight / 10) * 10))
+        var themed = Math.min(900, Math.max(100, Math.round(theme.fontWeight / 10) * 10))
+        return window.foliaGetLyricFontWeight ? window.foliaGetLyricFontWeight(themed) : themed
       }
-      return fallback
+      return window.foliaGetLyricFontWeight ? window.foliaGetLyricFontWeight(fallback) : fallback
     }
 
     // ---------- 行构建 ----------
@@ -576,7 +579,7 @@
           setTimeout(function () { previous.remove() }, 460)
         }
 
-        layout = buildTiltLayout(activeLine.fullText, activeLine.startTime, theme, fontScale)
+        layout = buildTiltLayout(activeLine.fullText, activeLine.startTime, theme, fontScale, TUNING)
         visibleSegmentIndex = -1
 
         // 分句时间范围 + 逐字时间
@@ -646,6 +649,10 @@
       setTheme: setTheme,
       setLines: setLines,
       setFontScale: function (s) { fontScale = s === undefined ? 1 : s },
+      // 热更样式参数（概率/配色在行构建时读取，下一行生效）
+      setTuning: function (partial) {
+        if (partial) TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('tilt', partial)) || TUNING
+      },
       tick: tick,
       destroy: destroy
     }

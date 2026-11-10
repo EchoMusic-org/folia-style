@@ -12,7 +12,7 @@
   var GraphemeTiming = window.FoliaGraphemeTiming
 
   // 原版 DEFAULT_PARTITA_TUNING
-  var TUNING = { showGuideLines: true, useSemanticLayout: true, staggerMin: 20, staggerMax: 100 }
+  var DEFAULT_PARTITA_TUNING = { showGuideLines: true, useSemanticLayout: true, staggerMin: 20, staggerMax: 100 }
   var PREHEAT_WINDOW = { minLead: 0.18, maxLead: 1.2 }
   var LAYOUT_CACHE_LIMIT = 48
 
@@ -20,7 +20,9 @@
     return GraphemeTiming.splitLyricGraphemes(text)
   }
 
-  function createMode() {
+  function createMode(config) {
+    // tuning 为实例级（预览舞台与主页面可能同时运行本模式）
+    var TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('partita', config)) || DEFAULT_PARTITA_TUNING
     var host = null
     var floatEl = null
     var lineHost = null
@@ -362,7 +364,7 @@
       wordEl.style.cssText = [
         'display:inline-block', 'transform-origin:center', 'position:relative',
         'will-change:transform', 'white-space:nowrap',
-        'font-size:' + fontSize + 'px', 'font-weight:700', 'line-height:1.22',
+        'font-size:' + fontSize + 'px', 'font-weight:' + (window.foliaGetLyricFontWeight ? window.foliaGetLyricFontWeight(700) : 700), 'line-height:1.22',
         'margin-right:0.8rem'
       ].join(';')
 
@@ -741,6 +743,10 @@
       setTheme: setTheme,
       setLines: setLines,
       setFontScale: function (s) { fontScale = s === undefined ? 1 : s },
+      // 热更样式参数（引导线/语义排列/错位在布局缓存键中，变化后由缓存失效自然重建布局）
+      setTuning: function (partial) {
+        if (partial) TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('partita', partial)) || TUNING
+      },
       tick: tick,
       destroy: destroy
     }

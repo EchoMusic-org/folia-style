@@ -17,8 +17,8 @@
   var LyricsData = window.FoliaLyricsData
   var GraphemeTiming = window.FoliaGraphemeTiming
 
-  // 原版 DEFAULT_PENDOLO_TUNING（内联常量）
-  var TUNING = Core.DEFAULT_PENDOLO_TUNING
+  // 原版 DEFAULT_PENDOLO_TUNING（内联常量）；实例级 tuning 在 createMode 内声明（同名遮蔽）
+  var DEFAULT_PENDOLO_TUNING = Core.DEFAULT_PENDOLO_TUNING
 
   // 原版 VisualizerPendolo 顶部常量
   var PENDOLO_SCROLL_IDLE_RESET_MS = 2500
@@ -191,7 +191,9 @@
     return steps
   }
 
-  function createMode() {
+  function createMode(config) {
+    // tuning 为实例级（预览舞台与主页面可能同时运行本模式）；布局/绘制每帧读取，支持热更
+    var TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('pendolo', config)) || DEFAULT_PENDOLO_TUNING
     var host = null
     var rootEl = null        // 原版 visualizerRef 容器（relative w-full h-full overflow-hidden）
     var canvasEl = null
@@ -1767,6 +1769,12 @@
           fontScale = next
           layoutVersion += 1
         }
+      },
+      // 热更样式参数（轮盘几何/饰线/表盘封面每帧读取；activeScale 参与行高布局，bump 版本触发重排）
+      setTuning: function (partial) {
+        if (!partial) return
+        TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('pendolo', partial)) || TUNING
+        layoutVersion += 1
       },
       tick: tick,
       destroy: destroy

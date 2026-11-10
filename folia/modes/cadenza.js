@@ -11,8 +11,8 @@
   var ColorMix = window.FoliaColorMix
   var WordColoring = window.FoliaWordColoring
 
-  // 原版 DEFAULT_CADENZA_TUNING
-  var TUNING = { fontScale: 1.12, widthRatio: 0.72, motionAmount: 1, glowIntensity: 1, beamIntensity: 0 }
+  // 原版 DEFAULT_CADENZA_TUNING（beamIntensity 上游已随光束移除、插件未消费，不保留）
+  var DEFAULT_CADENZA_TUNING = { fontScale: 1.12, widthRatio: 0.72, motionAmount: 1, glowIntensity: 1 }
   var ACTIVE_PULSE_FREQUENCY = 10
 
   function clamp(value, min, max) { return Math.max(min, Math.min(max, value)) }
@@ -31,7 +31,9 @@
     return GraphemeTiming.splitLyricGraphemes(text)
   }
 
-  function createMode() {
+  function createMode(config) {
+    // tuning 为实例级（预览舞台与主页面可能同时运行本模式）：闭包遮蔽模块级默认，互不污染
+    var TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('cadenza', config)) || DEFAULT_CADENZA_TUNING
     var host = null
     var container = null
     var lineLayer = null
@@ -738,7 +740,9 @@
     // 预排版状态构建与缓存
     function buildPreparedState(line, viewport) {
       var fontPx = clamp(chooseFontPx(viewport.width, line) * TUNING.fontScale, 24, 132)
-      var font = '700 ' + fontPx + 'px ' + fontFamily()
+      // 主歌词字重：样式设置窗口「字体」页全局覆盖（0=自动走内置 700）
+      var fontWeight = window.foliaGetLyricFontWeight ? window.foliaGetLyricFontWeight(700) : 700
+      var font = fontWeight + ' ' + fontPx + 'px ' + fontFamily()
       var pretext = window.Pretext
       if (!pretext) return null
 
@@ -1106,6 +1110,10 @@
       setTheme: setTheme,
       setLines: setLines,
       setFontScale: function (s) { fontScale = s === undefined ? 1 : s },
+      // 热更样式参数（每帧/每行渲染时读取，生效无需重建）
+      setTuning: function (partial) {
+        if (partial) TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('cadenza', partial)) || TUNING
+      },
       tick: tick,
       destroy: destroy
     }

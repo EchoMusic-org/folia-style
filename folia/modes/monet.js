@@ -22,7 +22,8 @@
   var GraphemeTiming = window.FoliaGraphemeTiming
 
   // ================= 原版 DEFAULT_MONET_TUNING（src/types.ts）内联 =================
-  var MONET_TUNING = {
+  // （portraitSource 插件未消费；tuning 变化走实例重建路径，覆盖构建期消费的键）
+  var DEFAULT_MONET_TUNING = {
     keywordColoringEnabled: true,
     showDescription: true,
     showAudioVisualization: true,
@@ -837,7 +838,9 @@
   // ============================================================
   // 模式工厂
   // ============================================================
-  function createMode() {
+  function createMode(config) {
+    // tuning 为实例级（预览舞台与主页面可能同时运行本模式）
+    var MONET_TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('monet', config)) || DEFAULT_MONET_TUNING
     var host = null
     var styleEl = null
     var rootEl = null

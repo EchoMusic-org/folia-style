@@ -20,10 +20,16 @@ index.js                 # 宿主侧 ESM 模块，暴露 activate/deactivate
 style.css                # 宿主侧样式（覆盖层容器 + 加载态）
 TRANSPILE_GUIDE.md       # 模式转写规范（模式接口/frameState/工具库/React→原生对应规则）
 INTEGRATION.md           # bridge.html 接入规范（历史文档，集成已完成，留作参考）
-folia/
-  bridge.html            # iframe 内的完整前端（HTML + 内联主脚本 ~1300 行）：
-                         #   状态机 S、消息路由、模式/背景经注册表调度、主循环 tick、设置菜单
-  css/base.css           # 基础样式（控制胶囊/设置菜单/队列面板；旧模式 override 已删）
+  folia/
+  bridge.html            # iframe 内的完整前端（HTML + 内联主脚本）：
+                         #   状态机 S、消息路由、模式/背景经注册表调度、主循环 tick、
+                         #   设置菜单（已瘦身：播放控制/音量/队列 + 「歌词样式设置」入口）、FoliaBridge API
+  css/base.css           # 基础样式（控制胶囊/设置菜单/队列面板；样式调节 UI 已迁至二级窗口）
+  window/                # 歌词样式设置二级窗口（复刻 folia-major VisPlayground/StudioWindow）
+    style-window.css       # 窗口外壳/舞台/样式架/设置列/控件套件样式（--fsw-* 主题变量）
+    style-window.js        # 窗口主体：五页设置列（动画/背景/字体/字幕/全局）+ 开关窗 + 桥接回调
+    panel-kit.js           # 控件套件（行/滑条 draft-gate/开关/分段/网格选项/颜色/输入 + schema 渲染器）
+    sample-stage.js        # 示例舞台：内置示例歌词 + 预览时钟（builtin）/ bridge 实时帧（live），模式实例管理
   runtime/               # 公共运行时（folia-major utils 的原生 JS 移植 + 自研动画引擎）
     color-mix.js           # 颜色混合/解析（colorWithAlpha/mixColors/parseColorChannels）
     grapheme-timing.js     # 字形级时间轴（splitLyricGraphemes/buildWordGraphemeTimings/buildLineGraphemeTimeline）
@@ -36,23 +42,24 @@ folia/
     anim.js                # framer-motion 等价引擎（spring 物理采样 + WAAPI 关键帧/补间）
     theme.js               # 封面取色主题链路（extractColors → 调色板分析 → 明暗五色主题 + 对比度求解）
     lyrics-data.js         # 行数据适配（宿主毫秒行 → 原版 Line 秒制 + renderHints 推导 + 行索引查找）
-    subtitle-overlay.js    # 共享底部字幕（翻译/罗马音 + 下一句预览）
-    registry.js            # 14 种模式注册表（id/label/文件清单/vendor 懒加载/旧 id 映射）
-  modes/                 # 14 种模式；统一接口 create() → { id, mount, setTheme, setLines, setFontScale, tick(frameState), destroy }
-    classic.js liuguang 已并入  # 流光（原版 classic，逐词弹性 + 双层发光，默认模式）
-    cadenza.js             # 心象（pretext 排版 + hero 强调 + 碰撞回避散落 + 指数平滑逐帧驱动）
+    tunings.js             # 样式参数数据层：14 模式 + 背景的 schema（键/label/范围/默认）+ 读写/归一化/持久化 + 外观（字体/字幕/透明度）+ 随机池
+    subtitle-overlay.js    # 共享底部字幕（翻译/罗马音 + 下一句预览；读取 folia-appearance.subtitle 设置）
+    registry.js            # 14 种模式注册表（id/label/文件清单/vendor 懒加载/旧 id 映射；switchMode 传 tuning，previewCreate 供舞台用）
+  modes/                 # 14 种模式；统一接口 create(tuning) → { id, mount, setTheme, setLines, setFontScale, [setTuning], tick(frameState), destroy }
+    classic.js liuguang 已并入  # 流光（原版 classic，逐词弹性 + 双层发光，默认模式；tuning: wordSpacing）
+    cadenza.js             # 心象（pretext 排版 + hero 强调 + 碰撞回避散落 + 指数平滑逐帧驱动；tuning: fontScale/widthRatio/motionAmount/glowIntensity 插件扩展）
     partita.js             # 云阶（分块 stagger + 引导线）
     tilt.js                # 倾诉（SentenceLayout 分句 + 斜体错落 + 逐字脉冲）
     fume.js                # 浮名（canvas 2D 文章布局 + 相机阅读）
     monet.js               # 莫奈（海报人像 + 歌词 rail + 频谱，原版 ~3400 行转写）
-    sonnet/ + sonnet.js    # 商籁（Pixi WebGL 日系文字 PV，15 文件 ~10600 行）
-    tempera/ + tempera.js  # 凝彩（Pixi 色块拼贴，14 文件 ~9400 行，复用 sonnet-core/sonnet-filters）
-    lumiere/ + lumiere.js  # 绘光（Pixi 舞台灯光式歌词 PV，10 文件 ~9600 行，前置复用 sonnet-core 的纹理池工具；设置面板不移植，tuning 固定默认值）
-    diorama/ + diorama.js  # 镜台（three.js 3D 歌词走廊，8 文件 ~5100 行）
+    sonnet/ + sonnet.js    # 商籁（Pixi WebGL 日系文字 PV，15 文件 ~10600 行；tuning 变化走重建）
+    tempera/ + tempera.js  # 凝彩（Pixi 色块拼贴，14 文件 ~9400 行，复用 sonnet-core/sonnet-filters；运行时支持 setTuning 热更）
+    lumiere/ + lumiere.js  # 绘光（Pixi 舞台灯光式歌词 PV，10 文件 ~9600 行，前置复用 sonnet-core 的纹理池工具；tuning 22 项可调，场景运行时 setTuning 热更）
+    diorama/ + diorama.js  # 镜台（three.js 3D 歌词走廊，8 文件 ~5100 行；tuning 变化走重建）
     claddagh.js            # 回环（椭圆环投影 + spring 自转）
     pendolo-core.js + pendolo.js  # 时计（表盘弧形歌词 + 机芯 canvas）
-    cappella.js            # 群唱（聊天弹幕 + 表情/头像图）
-    still.js               # 静止（低占用静态三行）
+    cappella.js            # 群唱（聊天弹幕 + 表情/头像图；新消息生效）
+    still.js               # 静止（低占用静态三行；无调参项）
   backgrounds/           # 7 种背景系统（与模式同构的注册表 + 实例接口）
     background-registry.js # 背景注册表（transparent/common/latent/monet/nomand/sora/url）
     transparent.js         # 透明背景：不绘制内容，scrim 透出宿主窗口毛玻璃/透明材质（参照主程序歌词页 rgba(0,0,0,0.55)）；支持 setOverlayOpacity 滑块覆盖值（透明面板「背景透明度」，仅作用本插件 scrim）
@@ -76,10 +83,13 @@ folia/
 
 完整规范见 `TRANSPILE_GUIDE.md`。要点：
 
+- 模式工厂签名 `create(tuning)`：`tuning` 为归一化后的样式参数对象（undefined 时用模式内置默认），由 `FoliaRegistry.switchMode`/`previewCreate` 从 `sharedState.tuning` 透传。模式内部按 `window.FoliaTunings.resolveModeTuning(modeId, config)` 归一化（schema 在 `runtime/tunings.js`），**必须声明为 createMode 作用域内的实例级变量**（预览舞台与主页面可能同时运行同一模式，模块级可变状态会互相污染）。
+- 可选实例方法 `setTuning(partial)`：支持热更的模式实现它（classic/cadenza/partita/tilt/fume/monet 每帧/每行读取可安全热更；tempera/lumiere 转发给 Pixi 运行时；claddagh/pendolo/cappella 布局或消息构建时读取）。未实现的模式（sonnet/tempera 场景注入型/diorama/monet 构建期消费/still）由 bridge `applyModeTuning` 走销毁重建路径。
 - 模式实例 `tick(frameState)` 每帧收到：`currentTime`（秒，含歌词矫正）、`dt`、`currentLineIndex`、`lines`（原版 Line 结构：`{startTime, endTime, words, fullText, translation, renderHints}`，秒制）、`theme`（五色 + animationIntensity）、`audioPower`（0~1）、`audioBands`（`{bass, lowMid, mid, vocal, treble}` 0~1；背景内部自行 ×255 还原原版值域）、`isPlaying`、`showText`、`songTitle/songArtist/songAlbum/coverUrl`。
 - 主循环行索引用 `FoliaLyricsData.findLatestActiveLineIndex`（renderEndTime 内视为活动行），与原版 `findLatestActiveLineIndex` 行为一致。
 - 主题：切歌时 `FoliaTheme.buildThemeFromCover(coverUrl)` 异步取色生成；默认主题为原版"午夜墨染"（#09090b/#f4f4f5/#f4f4f5/#71717a）。
-- 字体：模式内一律走 `window.foliaGetLyricFontFamily()`（bridge.html 由宿主 `echo-folia:appearance` 设置），判空回退 `theme.fontFamily || 'sans-serif'`。
+- 字体：模式内一律走 `window.foliaGetLyricFontFamily()`（bridge.html 由宿主 `echo-folia:appearance` 设置），判空回退 `theme.fontFamily || 'sans-serif'`；主歌词字重经 `window.foliaGetLyricFontWeight(fallback)`（样式设置窗口「字体」页全局覆盖，0=自动走模式内置字重；已接 classic/cadenza/partita/tilt/claddagh，其余样式按自身设计字重渲染）。
+- 字号缩放经 `setFontScale`（全部模式消费），值来自 `folia-appearance.fontScale`。
 
 ## 宿主 API（`ctx`）实际使用面
 
@@ -126,13 +136,24 @@ iframe → 宿主（`bridge.html` 内 `parent.postMessage`）：
 
 ## iframe 内部架构（`folia/bridge.html`）
 
-- 前半是模板 DOM：设置菜单（音乐/歌词/设置/播放列表四页）、底部控制胶囊、`#folia-bg-host`（背景挂载，z1）、`#folia-mode-host`（模式挂载，z5）、`#win-controls` 窗口控制。
-- 主脚本：状态机 `S`、歌词过滤（保留）、模式/背景注册表调度（`switchToMode/switchToBackground`）、切歌钩子 `onSongMaybeChanged`（主题取色 + 每歌随机模式）、主循环 `tick`（进度条 + frameState 驱动模式 + 背景帧驱动）。
+- 前半是模板 DOM：设置菜单（**已瘦身**：音乐/设置/播放列表三页；设置页仅保留「歌词样式设置」入口、播放模式/收藏大按钮、音量）、底部控制胶囊、`#folia-bg-host`（背景挂载，z1）、`#folia-mode-host`（模式挂载，z5）、`#win-controls` 窗口控制。
+- 主脚本：状态机 `S`、歌词过滤（保留）、模式/背景注册表调度（`switchToMode/switchToBackground`，均携带保存的 tuning）、切歌钩子 `onSongMaybeChanged`（主题取色 + 每歌随机池抽取）、主循环 `tick`（进度条 + frameState 驱动模式 + 背景帧驱动 + 实时帧分发 `frameListeners`）、`applyModeTuning`（模式支持 setTuning 则热更，否则销毁重建）、字体工具（`foliaGetLyricFontWeight`）、外观应用（`applyFontScale/applyFontWeight/applyVisualizerOpacity`）。
+- `window.FoliaBridge`：对样式设置窗口的桥接 API（状态快照 getState + 全部设置动作 setAnimMode/setIntensity/applyModeTuning/setBackgroundMode/applyBgTuning/setCoverBlur/透明接管/URL 背景增删选/字体三应用/歌词过滤/时间矫正/onFrame 实时帧订阅/setMainModePaused）。
+- 窗口（`window/style-window.js`）暴露 `window.FoliaStyleWindow = { open, close, isOpen, onModeChange, onBackgroundChange, onCoverBlurChange, onTransparentStateChange, onLyricSettingsChange, onAppearanceChange }`；bridge 状态变化时调用对应回调刷新窗口控件。窗口打开时 `setMainModePaused(true)` 暂停主页面模式/背景 tick（GPU 让给预览舞台），关闭恢复。
 - 时间轴：宿主 `position` 事件只在事件/心跳时发；iframe 用 `getLocalTimeMs()` 做本地外推，加上用户 `folia-timeOffset`（localStorage 存的歌词矫正秒数）得到 `effectiveLyricTimeMs()`——只影响歌词显示，绝不改真实播放进度。
-- 设置存储（localStorage）：`folia-animMode`（模式 id，旧 id 自动经 `FoliaRegistry.resolveId` 映射）、`folia-intensity`（calm/normal/chaotic）、`folia-backgroundMode`（7 种背景）、`folia-randomModePerSong`（每歌随机开关）、`folia-timeOffset`、`folia-lyricFilterEnabled/folia-lyricFilterRegex`、`folia-coverBlur`、`folia-urlBackgrounds`（url 背景列表 JSON）、`folia-transparentOpacity`（透明背景滑块覆盖值 0~100）、`folia-transparentFrost`（毛玻璃三段持久选择 off/foreground/always，null=跟随宿主）。滑块与三段均为歌词页专属偏好：进入歌词页自动应用（接管宿主），退出歌词页由宿主回写快照还原，不写主程序持久设置。
-- 背景切换幂等（同 id 重复调用返回现有实例）；common 背景的 `useCoverColorBg` 跟随 `folia-coverBlur` 开关，变更时销毁重建实例。
+- 设置存储（localStorage）：`folia-animMode`（模式 id，旧 id 自动经 `FoliaRegistry.resolveId` 映射）、`folia-intensity`（calm/normal/chaotic）、`folia-backgroundMode`（7 种背景）、`folia-randomModePerSong`（每歌随机开关）、`folia-randomPool`（随机池模式 id 数组，空 = 全部）、`folia-tuning-<modeId>`（14 种模式样式参数 JSON，schema 与归一化在 `runtime/tunings.js`）、`folia-bgtuning-<bgId>`（背景参数 JSON：common 的 opacity/暗角 + latent/monet/nomand 全套）、`folia-appearance`（字体 tab + 字幕 tab：fontScale/fontWeight/visualizerOpacity/subtitle{enabled,opacity,background,upcomingBlur,fontScale}）、`folia-timeOffset`、`folia-lyricFilterEnabled/folia-lyricFilterRegex`、`folia-coverBlur`、`folia-urlBackgrounds`（url 背景列表 JSON）、`folia-transparentOpacity`（透明背景滑块覆盖值 0~100）、`folia-transparentFrost`（毛玻璃三段持久选择 off/foreground/always，null=跟随宿主）。滑块与三段均为歌词页专属偏好：进入歌词页自动应用（接管宿主），退出歌词页由宿主回写快照还原，不写主程序持久设置。
+- 背景切换幂等（同 id 重复调用返回现有实例）；config 由 `buildBackgroundConfig(mode)` 组装（common 的 `useCoverColorBg` 跟随 `folia-coverBlur`，opacity/暗角来自 `folia-bgtuning-common`；latent/monet/nomand 整包来自 tuning；transparent/url 维持原专用通道）。背景参数变更经 `applyBgTuning` 销毁重建实例。
 
-新增模式的路径：按 `TRANSPILE_GUIDE.md` 写 `modes/xxx.js`（工厂 `window.FoliaModeXxx.create`）→ `runtime/registry.js` 注册（大体量模式用模块数组）→ `bridge.html` 设置菜单加选项。vendor 依赖（pixi/three/pretext）由注册表在加载模式前自动懒加载。
+新增模式的路径：按 `TRANSPILE_GUIDE.md` 写 `modes/xxx.js`（工厂 `window.FoliaModeXxx.create(tuning)`，tuning 接线见模式接口一节）→ `runtime/registry.js` 注册（大体量模式用模块数组）→ `runtime/tunings.js` 加 schema（无可调参数则不加，窗口显示"这个样式没有参数"）。样式架与设置列由 schema 驱动，无需改窗口代码。vendor 依赖（pixi/three/pretext）由注册表在加载模式前自动懒加载。
+
+## 样式设置二级窗口（`folia/window/`）
+
+复刻上游 folia-major VisPlayground：StudioWindow 外壳（暗层 + 居中 1240×780，头部返回 + 标题）、左侧示例舞台（内置示例歌词/实时画面双源 + 暂停 + 舞台背景预览实例）、样式架（14 样式 + 随机，canvas 简化缩略图）、右侧 420px 设置列五页（动画/背景/字体/字幕/全局）。
+
+- **draft/commit 语义**：滑条 input 只更新 draft 并经 `setTuning` 热更舞台实例（实时反馈），change（松手）才写 localStorage 并应用到主页面；不支持热更的模式松手后重建舞台与主页面实例。网格/开关/分段即时 commit。
+- **缩略图**：canvas 2D 简化绘制（主题底色 + 示例文字 + 按样式特征微调），随主题变化缓存失效；不做逐样式真实渲染（避免 14 组 pixi/three 并行）。
+- **明确不做**：智能动感/beat effects、字体样式选择与自定义字体（字体族跟随宿主）、`render` 分辨率覆盖、上游 hanabi/machi/nebbia 三个未移植样式、画布图片上传池（tempera layerImages）、背景自定义图片上传。
+- **已知取舍**：cappella 头像来源对已渲染消息不回溯；字幕内容（翻译/罗马音）跟随宿主歌词页设置（iframe 内 secondary 为混合值，不可拆分）；字重全局覆盖仅接 classic/cadenza/partita/tilt/claddagh 五个模式。
 
 ## 兼容与遗留
 

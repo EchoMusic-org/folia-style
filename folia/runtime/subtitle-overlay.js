@@ -85,17 +85,33 @@
    * 更新字幕（每帧/行变化时调用）
    * options: { hostEl, showText, activeLine, recentCompletedLine, nextLines, theme,
    *            opacity, subtitleFontScale, subtitleOverlayBackground, subtitleUpcomingLyricsBlur }
+   * 插件字幕设置（样式设置窗口「字幕」页，folia-appearance.subtitle）覆盖模式传入的默认值。
    */
   function update(options) {
     var theme = options.theme
     if (!theme) return
     ensureDom(options.hostEl)
 
+    // 插件字幕设置：enabled=false 时直接隐藏；其余项覆盖未显式传入的默认值
+    var subtitleSettings = window.FoliaTunings ? window.FoliaTunings.getAppearance().subtitle : null
+    if (subtitleSettings && subtitleSettings.enabled === false) {
+      hide()
+      return
+    }
+
     var content = resolveContent(options)
-    var resolvedOpacity = options.opacity === undefined ? 0.6 : options.opacity
-    var fontScale = options.subtitleFontScale === undefined ? 1 : options.subtitleFontScale
-    var withBackground = options.subtitleOverlayBackground !== false
-    var upcomingBlur = options.subtitleUpcomingLyricsBlur !== false
+    var resolvedOpacity = subtitleSettings && subtitleSettings.opacity !== undefined
+      ? subtitleSettings.opacity
+      : (options.opacity === undefined ? 0.6 : options.opacity)
+    var fontScale = subtitleSettings && subtitleSettings.fontScale !== undefined
+      ? subtitleSettings.fontScale
+      : (options.subtitleFontScale === undefined ? 1 : options.subtitleFontScale)
+    var withBackground = subtitleSettings && subtitleSettings.background !== undefined
+      ? subtitleSettings.background
+      : (options.subtitleOverlayBackground !== false)
+    var upcomingBlur = subtitleSettings && subtitleSettings.upcomingBlur !== undefined
+      ? subtitleSettings.upcomingBlur
+      : (options.subtitleUpcomingLyricsBlur !== false)
     var textShadow = '0 1px 2px ' + ColorMix.colorWithAlpha(theme.backgroundColor, 0.24)
 
     if (!content.shouldRenderOverlay) {

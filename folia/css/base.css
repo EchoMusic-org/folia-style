@@ -454,7 +454,26 @@ body.folia-mac-platform .close-overlay-btn{left:80px}
 /* 设置子页面 */
 .sm-settings{display:none;width:100%;flex-direction:column;gap:16px}
 .sm-settings.active{display:flex}
-/* 三个大按钮 */
+/* 歌词样式设置入口（样式调节已统一收口到二级窗口） */
+.sm-style-entry{
+  width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;
+  border-radius:14px;border:1px solid rgba(0,245,212,0.22);
+  background:linear-gradient(135deg,rgba(0,245,212,0.10),rgba(0,245,212,0.03));
+  color:#fff;cursor:pointer;text-align:left;
+  transition:all 0.2s ease;
+}
+.sm-style-entry:hover{background:linear-gradient(135deg,rgba(0,245,212,0.16),rgba(0,245,212,0.06));border-color:rgba(0,245,212,0.36)}
+.sm-style-entry-icon{
+  width:34px;height:34px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,245,212,0.14);color:#00f5d4;
+}
+.sm-style-entry-icon svg{width:18px;height:18px;display:block}
+.sm-style-entry-text{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.sm-style-entry-title{font-size:13px;font-weight:600;color:#fff}
+.sm-style-entry-desc{font-size:11px;color:rgba(255,255,255,0.42)}
+.sm-style-entry-arrow{width:14px;height:14px;flex-shrink:0;color:rgba(255,255,255,0.3)}
+/* 两个大按钮 */
 .sm-big-btns{display:flex;gap:10px}
 .sm-big-btn{
   flex:1;height:52px;border-radius:14px;border:none;

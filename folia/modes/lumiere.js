@@ -17,10 +17,12 @@
   var RenderHints = window.FoliaRenderHints
   var VisualizerRuntime = window.FoliaVisualizerRuntime
 
-  // 本插件无模式设置面板，tuning 固定默认值（原版默认开启无缝过渡与全部装饰层）
-  var TUNING = Core.DEFAULT_LUMIERE_TUNING
+  // 原版 DEFAULT_LUMIERE_TUNING（默认开启无缝过渡与全部装饰层）；tuning 为实例级，
+  // 场景运行时支持 setTuning 热更（lumiere-scene.js）
+  var DEFAULT_LUMIERE_TUNING = Core.DEFAULT_LUMIERE_TUNING
 
-  function createMode() {
+  function createMode(config) {
+    var TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('lumiere', config)) || DEFAULT_LUMIERE_TUNING
     var host = null            // 宿主元素（registry 传入）
     var layerEl = null         // 模式根层（inset 0 / z-10 / overflow hidden）
     var pixiHost = null        // Pixi canvas 宿主
@@ -362,6 +364,15 @@
       setTheme: setTheme,
       setLines: setLines,
       setFontScale: setFontScale,
+      // 热更样式参数：转发给场景运行时（内部 applySceneTuning 防抖重建）；编译键类
+      // 参数（seamlessTransitions）由运行时经防抖重建自然生效
+      setTuning: function (partial) {
+        if (!partial) return
+        TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('lumiere', partial)) || TUNING
+        if (runtime && typeof runtime.setTuning === 'function') {
+          try { runtime.setTuning(TUNING) } catch (e) { /* 热更失败由下次提交同步兜底 */ }
+        }
+      },
       tick: tick,
       destroy: destroy
     }

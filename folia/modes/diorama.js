@@ -63,7 +63,7 @@
     return !!line && line.fullText === INTERLUDE_FULL_TEXT
   }
 
-  function createMode() {
+  function createMode(config) {
     var host = null
     var layerEl = null
     var canvasHost = null
@@ -85,7 +85,8 @@
     var songArtist = null
     var songAlbum = null
     var fontScale = 1
-    var tuning = DEFAULT_TUNING
+    // tuning 为实例级（预览舞台与主页面可能同时运行本模式）；three 场景创建时一次性注入，参数变化走重建路径
+    var tuning = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('diorama', config)) || DEFAULT_TUNING
 
     // ---- WebGL 装配（原版 <Canvas>）----
     var renderer = null

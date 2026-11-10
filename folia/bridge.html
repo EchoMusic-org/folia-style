@@ -37,9 +37,6 @@
       <button class="sm-action-btn active" id="sm-btn-radio" title="音乐">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
       </button>
-      <button class="sm-action-btn" id="sm-btn-lyrics" title="歌词">
-        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
-      </button>
       <button class="sm-action-btn" id="sm-btn-settings" title="设置">
         <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a2 2 0 1 0 4 0a2 2 0 0 0-4 0m2-6v4m0 4v8m4-4a2 2 0 1 0 4 0a2 2 0 0 0-4 0m2-12v10m0 4v2m4-13a2 2 0 1 0 4 0a2 2 0 0 0-4 0m2-3v1m0 4v11"/></svg>
       </button>
@@ -52,36 +49,26 @@
       <div class="sm-artist" id="sm-artist">-</div>
       <div class="sm-album" id="sm-album">-</div>
     </div>
-    <!-- 歌词子页面 -->
-    <div class="sm-lyrics" id="sm-lyrics">
-      <!-- 歌词过滤 -->
-      <div class="sm-row lyric-filter-row">
-        <span class="sm-row-label">歌词过滤</span>
-        <div class="sm-seg">
-          <button class="sm-seg-btn active" id="lyric-filter-on"><span class="sm-bg-dot"></span> 开启</button>
-          <button class="sm-seg-btn" id="lyric-filter-off"><span class="sm-bg-dot"></span> 关闭</button>
-        </div>
-      </div>
-      <div class="sm-row lyric-filter-regex-row" id="lyric-filter-regex-row">
-        <span class="sm-row-label">过滤规则<br><small style="opacity:.6">空=默认</small></span>
-        <div style="display:flex;align-items:center;gap:6px;flex:1">
-          <input type="text" id="lyric-filter-regex-input" class="lyric-filter-input" placeholder="正则表达式" spellcheck="false">
-          <button class="sm-mini-btn" id="lyric-filter-reset-btn" type="button" title="恢复默认">↺</button>
-        </div>
-      </div>
-    </div>
-    <!-- 设置子页面 -->
+    <!-- 设置子页面（样式调节已统一收口到"歌词样式设置"二级窗口） -->
     <div class="sm-settings" id="sm-settings">
-      <!-- 三个大按钮 -->
+      <!-- 歌词样式设置入口 -->
+      <button class="sm-style-entry" id="sm-btn-style-window" type="button">
+        <span class="sm-style-entry-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        </span>
+        <span class="sm-style-entry-text">
+          <span class="sm-style-entry-title">歌词样式设置</span>
+          <span class="sm-style-entry-desc">动画 · 背景 · 字体 · 字幕</span>
+        </span>
+        <svg class="sm-style-entry-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+      <!-- 两个大按钮 -->
       <div class="sm-big-btns">
         <button class="sm-big-btn" id="sm-btn-mode" title="播放模式">
           <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 14-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
         </button>
         <button class="sm-big-btn" id="sm-btn-fav" title="收藏">
           <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-        </button>
-        <button class="sm-big-btn" id="sm-btn-blur" title="封面模糊背景">
-          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
         </button>
       </div>
       <!-- 音量控制 -->
@@ -98,99 +85,6 @@
             <div class="sm-volume-fill" id="sm-volume-fill" style="width:100%"></div>
             <div class="sm-volume-thumb" id="sm-volume-thumb" style="left:100%"></div>
           </div>
-        </div>
-      </div>
-      <!-- 动画模式 -->
-      <div class="sm-row">
-        <span class="sm-row-label">动画模式</span>
-        <div style="display:flex;gap:8px">
-          <div class="sm-anim-wrap">
-            <button class="sm-seg-btn active" id="sm-anim-btn">流光</button>
-            <div class="sm-anim-popup" id="sm-anim-popup">
-              <div class="sm-anim-option selected" data-val="classic"><span class="sm-anim-dot"></span>流光</div>
-              <div class="sm-anim-option" data-val="cadenza"><span class="sm-anim-dot"></span>心象</div>
-              <div class="sm-anim-option" data-val="partita"><span class="sm-anim-dot"></span>云阶</div>
-              <div class="sm-anim-option" data-val="fume"><span class="sm-anim-dot"></span>浮名</div>
-              <div class="sm-anim-option" data-val="tilt"><span class="sm-anim-dot"></span>倾诉</div>
-              <div class="sm-anim-option" data-val="monet"><span class="sm-anim-dot"></span>莫奈</div>
-              <div class="sm-anim-option" data-val="sonnet"><span class="sm-anim-dot"></span>商籁</div>
-              <div class="sm-anim-option" data-val="tempera"><span class="sm-anim-dot"></span>凝彩</div>
-              <div class="sm-anim-option" data-val="lumiere"><span class="sm-anim-dot"></span>绘光</div>
-              <div class="sm-anim-option" data-val="claddagh"><span class="sm-anim-dot"></span>回环</div>
-              <div class="sm-anim-option" data-val="pendolo"><span class="sm-anim-dot"></span>时计</div>
-              <div class="sm-anim-option" data-val="cappella"><span class="sm-anim-dot"></span>群唱</div>
-              <div class="sm-anim-option" data-val="diorama"><span class="sm-anim-dot"></span>镜台</div>
-              <div class="sm-anim-option" data-val="still"><span class="sm-anim-dot"></span>静止</div>
-            </div>
-          </div>
-          <div class="sm-anim-wrap">
-            <button class="sm-seg-btn active" id="sm-intensity-btn">标准</button>
-            <div class="sm-anim-popup" id="sm-intensity-popup">
-              <div class="sm-anim-option" data-val="calm"><span class="sm-anim-dot"></span>平静</div>
-              <div class="sm-anim-option selected" data-val="normal"><span class="sm-anim-dot"></span>标准</div>
-              <div class="sm-anim-option" data-val="chaotic"><span class="sm-anim-dot"></span>混乱</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- 背景设置（7 种背景下拉，经 FoliaBackgrounds 调度） -->
-      <div class="sm-row">
-        <span class="sm-row-label">背景</span>
-        <div style="display:flex;gap:8px">
-          <div class="sm-anim-wrap">
-            <button class="sm-seg-btn active" id="folia-bg-btn">通用</button>
-            <div class="sm-anim-popup" id="folia-bg-popup">
-              <div class="sm-anim-option" data-val="transparent"><span class="sm-anim-dot"></span>透明</div>
-              <div class="sm-anim-option selected" data-val="common"><span class="sm-anim-dot"></span>通用</div>
-              <div class="sm-anim-option" data-val="monet"><span class="sm-anim-dot"></span>莫奈</div>
-              <div class="sm-anim-option" data-val="nomand"><span class="sm-anim-dot"></span>漫游</div>
-              <div class="sm-anim-option" data-val="latent"><span class="sm-anim-dot"></span>隐现</div>
-              <div class="sm-anim-option" data-val="url"><span class="sm-anim-dot"></span>网页</div>
-              <div class="sm-anim-option" data-val="sora"><span class="sm-anim-dot"></span>星野</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- 透明背景面板（仅 transparent 背景时显示）：背景透明度滑块 + 毛玻璃三段开关 -->
-      <div class="url-bg-panel" id="transparent-bg-panel">
-        <div class="tr-panel-row">
-          <span class="tr-panel-label">背景透明度</span>
-          <input type="range" id="tr-opacity-range" class="tr-opacity-range" min="0" max="100" step="1">
-          <span class="lyric-offset-value" id="tr-opacity-value">--</span>
-        </div>
-        <div class="tr-panel-row">
-          <span class="tr-panel-label">毛玻璃</span>
-          <div class="sm-seg" id="tr-frost-seg">
-            <button class="sm-seg-btn" data-frost="off" type="button">关</button>
-            <button class="sm-seg-btn" data-frost="foreground" type="button">仅前台</button>
-            <button class="sm-seg-btn" data-frost="always" type="button">始终</button>
-          </div>
-        </div>
-        <div class="tr-panel-hint" id="tr-panel-hint"></div>
-      </div>
-      <!-- 网页背景 URL 管理（仅 url 背景时显示） -->
-      <div class="url-bg-panel" id="url-bg-panel">
-        <div style="display:flex;align-items:center;gap:6px">
-          <input type="text" id="url-bg-input" class="lyric-filter-input" placeholder="输入网页地址，如 https://example.com" spellcheck="false">
-          <button class="sm-mini-btn" id="url-bg-add-btn" type="button" title="添加网页背景" style="flex-shrink:0">＋</button>
-        </div>
-        <div class="url-bg-list" id="url-bg-list"></div>
-      </div>
-      <!-- 每首歌随机动画开关 -->
-      <div class="sm-row">
-        <span class="sm-row-label">每首歌随机动画</span>
-        <div class="sm-seg">
-          <button class="sm-seg-btn" id="folia-random-on"><span class="sm-bg-dot"></span> 开启</button>
-          <button class="sm-seg-btn active" id="folia-random-off"><span class="sm-bg-dot"></span> 关闭</button>
-        </div>
-      </div>
-      <!-- 歌词时间矫正 -->
-      <div class="sm-row">
-        <span class="sm-row-label">歌词时间矫正<br><small style="opacity:.6;margin-left:6px">+ 提前 / - 延后</small></span>
-        <div style="display:flex;align-items:center;gap:8px">
-          <button class="sm-mini-btn" id="lyric-offset-minus" type="button" title="歌词延后 0.1 秒">−</button>
-          <span class="lyric-offset-value" id="lyric-offset-value">0.0s</span>
-          <button class="sm-mini-btn" id="lyric-offset-plus" type="button" title="歌词提前 0.1 秒">+</button>
         </div>
       </div>
     </div>
@@ -275,15 +169,21 @@
 <script src="runtime/anim.js"></script>
 <script src="runtime/theme.js"></script>
 <script src="runtime/lyrics-data.js"></script>
+<script src="runtime/tunings.js"></script>
 <script src="runtime/subtitle-overlay.js"></script>
 <script src="runtime/registry.js"></script>
 <script src="backgrounds/paper-mount.js"></script>
 <script src="backgrounds/background-registry.js"></script>
+<!-- 样式设置二级窗口（面板样式项统一收口于此，复刻上游 VisPlayground） -->
+<link rel="stylesheet" href="window/style-window.css">
+<script src="window/panel-kit.js"></script>
+<script src="window/sample-stage.js"></script>
+<script src="window/style-window.js" defer></script>
 <script>
 (function(){
 'use strict';
 
-// ===== 歌词字体（由宿主设置） =====
+// ===== 歌词字体（字体族由宿主设置；字号/字重由插件样式设置窗口设置） =====
 var foliaDefaultFont='"Inter","PingFang SC","Microsoft YaHei","Noto Sans CJK SC",system-ui,sans-serif'
 var foliaLyricFontFamily=''
 window.foliaGetLyricFontFamily=function(){
@@ -293,6 +193,20 @@ function applyLyricFontFamily(family){
   var f=String(family||'').trim()
   foliaLyricFontFamily=f
   document.documentElement.style.setProperty('--lyric-font-family',f||foliaDefaultFont)
+}
+// 字重覆盖：0 = 自动（各模式内置字重），100~900 = 全局覆盖（模式经 foliaGetLyricFontWeight 取值）
+window.foliaGetLyricFontWeight=function(fallback){
+  var appearance=window.FoliaTunings?window.FoliaTunings.getAppearance():null
+  return appearance&&appearance.fontWeight>=100?appearance.fontWeight:(fallback||400)
+}
+function applyLyricFontWeight(weight){
+  var appearance=window.FoliaTunings?window.FoliaTunings.getAppearance():null
+  var w=Number.isFinite(Number(weight))?Number(weight):(appearance?appearance.fontWeight:0)
+  if(w>=100){
+    document.documentElement.style.setProperty('--lyric-font-weight',String(Math.round(w)))
+  }else{
+    document.documentElement.style.removeProperty('--lyric-font-weight')
+  }
 }
 
 // ===== 歌词过滤 =====
@@ -327,6 +241,8 @@ var lastFrameNow=0;                 // 帧间隔 dt 计算
 var activeMode=null;                // 当前模式实例（FoliaRegistry.switchMode 返回）
 var switchingMode=false;            // 模式切换中标记
 var activeBg=null;                  // 当前背景实例（FoliaBackgrounds.switchBackground 返回）
+var mainModePaused=false;           // 样式设置窗口打开时暂停主页面模式（GPU 让给预览舞台）
+var frameListeners=[];              // 实时帧订阅（样式设置窗口的实时预览源）
 // 宿主窗口背景有效状态（echo-folia:window-background / echo-folia:init 推送）：
 // { enabled:窗口背景是否开启, frosted:毛玻璃, opacity:背景不透明度 0~1, keepOnBlur:失焦保持毛玻璃 }，transparent 背景消费
 var windowBgState={enabled:false,frosted:false,opacity:1,keepOnBlur:false,activeEnabled:false};
@@ -451,13 +367,27 @@ async function switchToMode(id){
   switchingMode=true;
   activeMode=null; // 先清空引用，避免加载期间 tick 调到已销毁的旧实例
   try{
+    var resolvedId=window.FoliaRegistry.resolveId(id);
     activeMode=await window.FoliaRegistry.switchMode(id,document.getElementById('folia-mode-host'),{
-      theme:currentTheme,lines:S.adaptedLines,fontScale:1
+      theme:currentTheme,lines:S.adaptedLines,
+      fontScale:window.FoliaTunings?window.FoliaTunings.getAppearance().fontScale:1,
+      tuning:window.FoliaTunings?window.FoliaTunings.getModeTuning(resolvedId):undefined
     });
     if(activeMode.setTheme&&currentTheme)activeMode.setTheme(currentTheme);
     if(activeMode.setLines)activeMode.setLines(S.adaptedLines);
   }catch(e){console.warn('[Folia] 模式切换失败',e)}
   switchingMode=false;
+}
+
+// 应用样式参数变化：当前模式实例支持 setTuning 则热更，否则销毁重建（携带新 tuning）
+function applyModeTuning(modeId,tuning){
+  if(window.FoliaRegistry.resolveId(modeId)!==currentAnimMode)return;
+  if(activeMode&&typeof activeMode.setTuning==='function'){
+    try{activeMode.setTuning(tuning);return}catch(e){console.warn('[Folia] 模式参数热更失败，转重建',e)}
+  }
+  window.FoliaRegistry.destroyActive();
+  activeMode=null;
+  switchToMode(currentAnimMode);
 }
 
 // url 网页背景配置：URL 列表存于 localStorage（[{id,url,note}] + 选中 id），设置菜单提供编辑 UI
@@ -496,59 +426,13 @@ function activeUrlBgId(cfg){
   }
   return cfg.items.length?cfg.items[0].id:null
 }
-function renderUrlBgPanel(){
-  var panel=document.getElementById('url-bg-panel')
-  var list=document.getElementById('url-bg-list')
-  if(!panel||!list)return
-  var show=backgroundMode==='url'
-  panel.classList.toggle('active',show)
-  if(!show){list.innerHTML='';return}
-  var cfg=urlBgConfig()
-  var activeId=activeUrlBgId(cfg)
-  var html=''
-  for(var i=0;i<cfg.items.length;i++){
-    var item=cfg.items[i]
-    // url 为用户自由输入，属性值需额外转义引号（escapeHtml 只处理 & < >）
-    html+='<div class="url-bg-item'+(item.id===activeId?' active':'')+'" data-id="'+escapeHtml(item.id)+'">'
-    html+='<span class="url-bg-item-url" title="'+escapeHtml(item.url).replace(/"/g,'&quot;')+'">'+escapeHtml(item.url)+'</span>'
-    html+='<button class="url-bg-item-del" data-del="'+escapeHtml(item.id)+'" title="删除">×</button>'
-    html+='</div>'
-  }
-  list.innerHTML=html||'<div style="font-size:11px;color:rgba(255,255,255,0.3)">暂无网页，先在上方输入地址添加</div>'
-  var items=list.querySelectorAll('.url-bg-item')
-  for(var j=0;j<items.length;j++){
-    items[j].addEventListener('click',function(e){
-      if(e.target.classList&&e.target.classList.contains('url-bg-item-del'))return
-      var id=this.getAttribute('data-id')
-      var cfg2=urlBgConfig()
-      saveUrlBgConfig(cfg2.items,id)
-      renderUrlBgPanel()
-      refreshUrlBackground()
-    })
-  }
-  var dels=list.querySelectorAll('.url-bg-item-del')
-  for(var k=0;k<dels.length;k++){
-    dels[k].addEventListener('click',function(e){
-      e.stopPropagation()
-      var id=this.getAttribute('data-del')
-      var cfg3=urlBgConfig()
-      var next=[]
-      for(var m=0;m<cfg3.items.length;m++){
-        if(cfg3.items[m].id!==id)next.push(cfg3.items[m])
-      }
-      saveUrlBgConfig(next,cfg3.selectedId===id?null:cfg3.selectedId)
-      renderUrlBgPanel()
-      refreshUrlBackground()
-    })
-  }
-}
-function addUrlBgItem(){
-  var input=document.getElementById('url-bg-input')
-  var url=String(input&&input.value||'').trim()
-  if(!url)return
+// 添加网页背景（纯逻辑，UI 在样式设置窗口）：清洗引号/尖括号、自动补协议、去重并选中
+function addUrlBgItem(rawUrl){
+  var url=String(rawUrl||'').trim()
+  if(!url)return false
   // 清洗引号/尖括号（合法 URL 不含这些字符，且避免污染 HTML 属性）
   url=url.replace(/["'<>]/g,'')
-  if(!url)return
+  if(!url)return false
   // 无协议前缀时自动补 https://，避免 iframe 解析为相对路径失效
   if(!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(url))url='https://'+url
   var cfg=urlBgConfig()
@@ -563,17 +447,28 @@ function addUrlBgItem(){
     selectedId=item.id
   }
   saveUrlBgConfig(cfg.items,selectedId)
-  if(input)input.value=''
-  renderUrlBgPanel()
+  refreshUrlBackground()
+  return true
+}
+// 删除网页背景（纯逻辑，UI 在样式设置窗口）
+function removeUrlBgItem(id){
+  var cfg=urlBgConfig()
+  var next=[]
+  for(var m=0;m<cfg.items.length;m++){
+    if(cfg.items[m].id!==id)next.push(cfg.items[m])
+  }
+  saveUrlBgConfig(next,cfg.selectedId===id?null:cfg.selectedId)
   refreshUrlBackground()
 }
-document.getElementById('url-bg-add-btn').addEventListener('click',addUrlBgItem)
-document.getElementById('url-bg-input').addEventListener('keydown',function(e){
-  if(e.key==='Enter'){e.preventDefault();addUrlBgItem()}
-})
+// 选中网页背景（纯逻辑，UI 在样式设置窗口）
+function selectUrlBgItem(id){
+  var cfg=urlBgConfig()
+  saveUrlBgConfig(cfg.items,id)
+  refreshUrlBackground()
+}
 
-// ===== 透明背景面板（背景透明度滑块 + 毛玻璃三段开关，仅 transparent 背景时显示） =====
-// 滑块覆盖值只作用于本插件 scrim（transparent.js setOverlayOpacity），存插件 localStorage，
+// ===== 透明背景设置（UI 在样式设置窗口「背景」页） =====
+// 覆盖值只作用于本插件 scrim（transparent.js setOverlayOpacity），存插件 localStorage，
 // 不回写宿主透明度；毛玻璃三段经 echo-folia:command 临时接管宿主设置，退出歌词页由宿主回写。
 var transparentOverlay=(function(){
   try{
@@ -583,9 +478,6 @@ var transparentOverlay=(function(){
     return Number.isFinite(v)&&v>=0&&v<=100?v:null
   }catch(e){return null}
 })()
-var trRange=document.getElementById('tr-opacity-range')
-var trRangeValue=document.getElementById('tr-opacity-value')
-var trRangeRaf=0
 // 把当前覆盖值同步到透明背景实例（切回 transparent 时 switchToBackground 也会经 config 带入）
 function applyTransparentOverlay(){
   if(backgroundMode!=='transparent')return
@@ -593,19 +485,18 @@ function applyTransparentOverlay(){
     try{activeBg.setOverlayOpacity(transparentOverlay)}catch(e){}
   }
 }
-trRange.addEventListener('input',function(){
-  var v=Math.min(100,Math.max(0,Math.round(Number(trRange.value)||0)))
-  trRangeValue.textContent=v+'%'
-  if(trRangeRaf)return
-  trRangeRaf=requestAnimationFrame(function(){
-    trRangeRaf=0
-    transparentOverlay=v
-    try{localStorage.setItem('folia-transparentOpacity',String(v))}catch(e){}
-    applyTransparentOverlay()
-    // 同步到宿主：未开窗口背景时宿主临时开透明（transparency=滑块值），已开时仅对齐数值
-    sendCmd('set-window-transparency',{value:v})
-  })
-})
+// 设置背景透明度（样式设置窗口滑条，0~100；null=清除覆盖跟随宿主）
+function setTransparentOverlay(v){
+  transparentOverlay=(v===null||v===undefined)?null:Math.min(100,Math.max(0,Math.round(Number(v)||0)))
+  try{
+    if(transparentOverlay===null)localStorage.removeItem('folia-transparentOpacity')
+    else localStorage.setItem('folia-transparentOpacity',String(transparentOverlay))
+  }catch(e){}
+  applyTransparentOverlay()
+  // 同步到宿主：未开窗口背景时宿主临时开透明（transparency=滑块值），已开时仅对齐数值
+  if(transparentOverlay!==null)sendCmd('set-window-transparency',{value:transparentOverlay})
+  notifyTransparentStateChange()
+}
 // 毛玻璃三段持久选择：off=关 / foreground=仅前台 / always=始终；null=未设置（跟随宿主）
 // 与滑块同模型：进入歌词页自动应用，退出歌词页由宿主回写快照还原
 var transparentFrost=(function(){
@@ -615,18 +506,16 @@ var transparentFrost=(function(){
   }catch(e){return null}
 })()
 // 毛玻璃三段开关：off=关 / foreground=仅前台（失焦退回系统行为）/ always=始终（失焦保持）
-var frostBtns=Array.prototype.slice.call(document.querySelectorAll('#tr-frost-seg .sm-seg-btn'))
-frostBtns.forEach(function(btn){
-  btn.addEventListener('click',function(){
-    // 平台不支持窗口背景（activeEnabled=false）时禁用；未开启也允许点击——接管会临时开启
-    if(windowBgState.activeEnabled!==true)return
-    var mode=this.getAttribute('data-frost')
-    transparentFrost=mode
-    try{localStorage.setItem('folia-transparentFrost',mode)}catch(e){}
-    // 走现有 sendCmd 通道（command 平铺顶层），与 executeCommand 的读取格式一致
-    sendCmd('set-window-frosted-mode',{mode:mode})
-  })
-})
+function setTransparentFrost(mode){
+  if(mode!=='off'&&mode!=='foreground'&&mode!=='always')return
+  // 平台不支持窗口背景（activeEnabled=false）时禁用；未开启也允许点击——接管会临时开启
+  if(windowBgState.activeEnabled!==true)return
+  transparentFrost=mode
+  try{localStorage.setItem('folia-transparentFrost',mode)}catch(e){}
+  // 走现有 sendCmd 通道（command 平铺顶层），与 executeCommand 的读取格式一致
+  sendCmd('set-window-frosted-mode',{mode:mode})
+  notifyTransparentStateChange()
+}
 // 透明背景下的自动接管：滑块有覆盖值而宿主未开窗口背景时请求临时开透明；
 // 毛玻璃有持久选择且与宿主当前生效状态不一致时请求应用。仅在收到 init（windowBgState
 // 为宿主真实值）后执行，避免启动时误接管
@@ -645,28 +534,30 @@ function ensureTransparentTakeover(){
     }
   }
 }
-// 同步透明面板显隐与状态：滑块显示覆盖值（无覆盖时按宿主不透明度反推）、
-// 三段选中态与禁用态跟随宿主实际生效状态（接管后宿主推送的就是临时值，天然闭环）
-function syncTransparentPanel(){
-  var panel=document.getElementById('transparent-bg-panel')
-  if(!panel)return
-  var show=backgroundMode==='transparent'
-  panel.classList.toggle('active',show)
-  if(!show)return
-  var supported=windowBgState.activeEnabled===true
-  var display=transparentOverlay!==null
-    ?transparentOverlay
-    :Math.round((1-(Number(windowBgState.opacity)||1))*100)
-  trRange.value=String(Math.min(100,Math.max(0,Math.round(display))))
-  trRangeValue.textContent=trRange.value+'%'
-  var frostMode=!windowBgState.frosted?'off':(windowBgState.keepOnBlur?'always':'foreground')
-  frostBtns.forEach(function(btn){
-    btn.classList.toggle('active',btn.getAttribute('data-frost')===frostMode)
-  })
-  panel.classList.toggle('disabled',!supported)
-  document.getElementById('tr-panel-hint').textContent=!supported
-    ?'当前环境不支持窗口背景'
-    :(windowBgState.enabled===true?'':'调整将临时开启主程序窗口背景，退出歌词页后恢复')
+// 透明状态变化通知（窗口打开时刷新其滑条/三段选中态与禁用态）
+function notifyTransparentStateChange(){
+  if(window.FoliaStyleWindow&&window.FoliaStyleWindow.onTransparentStateChange){
+    window.FoliaStyleWindow.onTransparentStateChange()
+  }
+}
+// 兼容旧调用点（宿主推送窗口背景状态时触发窗口刷新）
+function syncTransparentPanel(){ notifyTransparentStateChange() }
+
+// 组装背景 config：URL/透明维持原有专用通道；common 覆盖项来自封面模糊开关 + 背景 tuning；
+// latent/monet/nomand 经 tuning 数据层（folia-bgtuning-*）下发；sora 无已消费参数
+function buildBackgroundConfig(mode){
+  if(mode==='url')return urlBgConfig();
+  if(mode==='transparent')return{windowBg:windowBgState,overlayOpacity:transparentOverlay};
+  if(mode==='common'){
+    var common=window.FoliaTunings?window.FoliaTunings.getBgTuning('common'):{opacity:0.75,disableVignette:true};
+    return{
+      useCoverColorBg:S.coverBlur,
+      opacity:common.opacity,
+      disableGeometricBackground:false,
+      disableVignette:common.disableVignette
+    };
+  }
+  return window.FoliaTunings?window.FoliaTunings.getBgTuning(mode):undefined;
 }
 
 // 切换背景（7 种，经 FoliaBackgrounds 调度）
@@ -675,16 +566,15 @@ async function switchToBackground(mode){
   try{
     activeBg=await window.FoliaBackgrounds.switchBackground(backgroundMode,document.getElementById('folia-bg-host'),{
       theme:currentTheme,coverUrl:S.coverUrl,
-      config:backgroundMode==='common'
-        ?{useCoverColorBg:S.coverBlur,opacity:0.75,disableGeometricBackground:false,disableVignette:false}
-        :(backgroundMode==='url'?urlBgConfig()
-        :(backgroundMode==='transparent'?{windowBg:windowBgState,overlayOpacity:transparentOverlay}:undefined))
+      config:buildBackgroundConfig(backgroundMode)
     });
     if(activeBg.setTheme&&currentTheme)activeBg.setTheme(currentTheme);
     if(activeBg.setCoverUrl)activeBg.setCoverUrl(S.coverUrl);
   }catch(e){console.warn('[Folia] 背景切换失败',e)}
   updateLegacyLayers();
-  syncBackgroundUI();
+  if(window.FoliaStyleWindow&&window.FoliaStyleWindow.onBackgroundChange){
+    window.FoliaStyleWindow.onBackgroundChange();
+  }
   // 切到透明背景时（歌词页内切换），未开窗口背景且滑块有覆盖值则自动请求临时开透明
   ensureTransparentTakeover();
   // 上报当前背景模式：宿主据此挂 folia-transparent-bg（透明模式下让出覆盖层背景、隐藏主界面）并回推窗口背景状态
@@ -744,7 +634,11 @@ function onSongMaybeChanged(){
   }
   if(randomModePerSong&&key!==lastSongKeyForRandom){
     lastSongKeyForRandom=key;
-    var opts=window.FoliaRegistry.getModeOptions();
+    // 随机池（样式设置窗口可选）：空池 = 全部模式参与
+    var pool=window.FoliaTunings?window.FoliaTunings.getRandomPool():[];
+    var opts=window.FoliaRegistry.getModeOptions().filter(function(o){
+      return !pool.length||pool.indexOf(o.id)>=0;
+    });
     if(opts&&opts.length){
       setAnimMode(opts[Math.floor(Math.random()*opts.length)].id);
     }
@@ -917,17 +811,12 @@ window.addEventListener('message',function(ev){
           var resolvedAnim=window.FoliaRegistry.resolveId(s.animMode);
           if(resolvedAnim!==currentAnimMode){
             setAnimMode(resolvedAnim);
-          }else{
-            syncAnimModeUI(currentAnimMode);
+          }else if(window.FoliaStyleWindow&&window.FoliaStyleWindow.onModeChange){
+            window.FoliaStyleWindow.onModeChange();
           }
         }
         if(s.intensity){
           currentIntensity=s.intensity;
-          var intensityBtnEl=document.getElementById('sm-intensity-btn');
-          var intensityOpt=document.querySelector('#sm-intensity-popup .sm-anim-option[data-val="'+s.intensity+'"]');
-          if(intensityBtnEl&&intensityOpt)intensityBtnEl.textContent=intensityOpt.textContent;
-          var intensityOpts=document.querySelectorAll('#sm-intensity-popup .sm-anim-option');
-          intensityOpts.forEach(function(o){o.classList.toggle('selected',o.getAttribute('data-val')===s.intensity)});
           // 强度变化立即写入主题并广播给当前模式/背景
           currentTheme=applyIntensity(currentTheme);
           broadcastTheme();
@@ -968,10 +857,12 @@ window.addEventListener('message',function(ev){
         S.coverUrl=null;S.songTitle=null;S.songArtist=null;S.songAlbum=null;
       }
       updatePlayButton();updateProgress();updateCapsuleState();updateModeIcon();updateFavState();updateCtrlFavState();updateSettingsVolume();updateLegacyLayers();renderQueue();
-      // 封面模糊开关变化：同步按钮状态并重建 common 背景流体层配置
+      // 封面模糊开关变化（宿主侧改动）：重建 common 背景流体层配置并通知窗口
       if(prevCoverBlur!==S.coverBlur){
-        updateCoverBlurBtn();
         refreshCommonBackgroundConfig();
+        if(window.FoliaStyleWindow&&window.FoliaStyleWindow.onCoverBlurChange){
+          window.FoliaStyleWindow.onCoverBlurChange();
+        }
       }
       if(settingsOpen&&lastActiveTab==='playlist')renderSmQueue();
       if(settingsOpen)updateSettingsInfo();
@@ -1126,7 +1017,6 @@ var lastActiveTab='radio'; // 记住上次的标签页
 
 // 隐藏所有子页面
 function hideAllTabs(){
-  smLyrics.classList.remove('active');
   smSettings.classList.remove('active');
   smQueue.classList.remove('active');
   smInfo.style.display='none';
@@ -1139,9 +1029,6 @@ function showTab(tab){
   if(tab==='radio'){
     smInfo.style.display='flex';
     document.getElementById('sm-btn-radio').classList.add('active');
-  }else if(tab==='lyrics'){
-    smLyrics.classList.add('active');
-    document.getElementById('sm-btn-lyrics').classList.add('active');
   }else if(tab==='settings'){
     smSettings.classList.add('active');
     document.getElementById('sm-btn-settings').classList.add('active');
@@ -1160,7 +1047,6 @@ function toggleSettings(){
   if(settingsOpen){
     updateSettingsInfo();
     showTab(lastActiveTab); // 恢复上次的标签页
-    renderUrlBgPanel(); // 网页背景 URL 列表按最新 localStorage 状态渲染
   }
   // 关闭时不重置标签页状态，保留 lastActiveTab
 }
@@ -1215,12 +1101,8 @@ document.getElementById('sm-album').onclick=function(){
 document.getElementById('sm-artist').onclick=function(){
   sendCmd('open-artist',{artistId:S.track?S.track.artistId:0});
 };
-// 歌词按钮 - 切换歌词子页面
-var smLyrics=document.getElementById('sm-lyrics');
+// 歌词子页面已移除（歌词过滤/时间矫正迁入样式设置窗口「全局」页）
 var smInfo=document.querySelector('.sm-info');
-document.getElementById('sm-btn-lyrics').onclick=function(){
-  showTab('lyrics');
-};
 // 设置按钮 - 切换设置子页面
 var smSettings=document.getElementById('sm-settings');
 document.getElementById('sm-btn-settings').onclick=function(){
@@ -1256,88 +1138,64 @@ function saveSettings(){
     localStorage.setItem('folia-coverBlur',S.coverBlur?'1':'0');
   }catch(e){console.warn('[Folia] 保存设置失败',e)}
 }
-// 封面模糊按钮（common 背景的封面流体层跟随此开关）
-var blurBtn=document.getElementById('sm-btn-blur');
-function updateCoverBlurBtn(){
-  blurBtn.classList.toggle('active',S.coverBlur);
-}
-document.getElementById('sm-btn-blur').onclick=function(){
-  S.coverBlur=!S.coverBlur;
-  updateCoverBlurBtn();
+// 封面模糊开关（UI 在样式设置窗口「背景」页；common 背景的封面流体层跟随此开关）
+function setCoverBlur(enabled){
+  var next=Boolean(enabled);
+  if(next===S.coverBlur)return;
+  S.coverBlur=next;
   updateLegacyLayers();
   refreshCommonBackgroundConfig();
   saveSettings();
   sendCmd('toggle-cover-blur');
-};
+  if(window.FoliaStyleWindow&&window.FoliaStyleWindow.onCoverBlurChange){
+    window.FoliaStyleWindow.onCoverBlurChange();
+  }
+}
 function updateSettingsVolume(){
   var vol=S.volume;
   document.getElementById('sm-volume-value').textContent=vol+'%';
   document.getElementById('sm-volume-fill').style.width=vol+'%';
   document.getElementById('sm-volume-thumb').style.left=vol+'%';
 }
-// ===== 歌词时间矫正控件 =====
-function updateLyricOffsetControls(){
-  var v=normalizeLyricTimeOffset(lyricTimeOffset);
-  var val=document.getElementById('lyric-offset-value');
-  var minus=document.getElementById('lyric-offset-minus');
-  var plus=document.getElementById('lyric-offset-plus');
-  if(val)val.textContent=formatLyricTimeOffset(v);
-  if(minus)minus.disabled=v<=-10;
-  if(plus)plus.disabled=v>=10;
+// ===== 歌词时间矫正（UI 在样式设置窗口「全局」页） =====
+function notifyLyricSettingsChange(){
+  if(window.FoliaStyleWindow&&window.FoliaStyleWindow.onLyricSettingsChange){
+    window.FoliaStyleWindow.onLyricSettingsChange()
+  }
 }
 function setLyricTimeOffset(v){
   lyricTimeOffset=normalizeLyricTimeOffset(v);
   try{localStorage.setItem('folia-timeOffset',String(lyricTimeOffset))}catch(e){}
-  updateLyricOffsetControls();
+  notifyLyricSettingsChange();
   // 行索引与逐字状态由主循环 tick 下一帧按矫正后时间重算，无需额外处理
 }
-document.getElementById('lyric-offset-minus').onclick=function(){setLyricTimeOffset(lyricTimeOffset-0.1)};
-document.getElementById('lyric-offset-plus').onclick=function(){setLyricTimeOffset(lyricTimeOffset+0.1)};
 
-// ===== 歌词过滤控件 =====
-function updateLyricFilterControls(){
-  document.getElementById('lyric-filter-on').classList.toggle('active',lyricFilterEnabled!==false)
-  document.getElementById('lyric-filter-off').classList.toggle('active',lyricFilterEnabled===false)
-  document.getElementById('lyric-filter-regex-row').style.display=lyricFilterEnabled!==false?'':'none'
-  var inputEl=document.getElementById('lyric-filter-regex-input')
-  var displayVal=lyricFilterRegex||DEFAULT_LYRIC_FILTER_REGEX
-  if(inputEl.value!==displayVal)inputEl.value=displayVal
+// ===== 歌词过滤（UI 在样式设置窗口「全局」页） =====
+function setLyricFilterEnabled(enabled){
+  lyricFilterEnabled=Boolean(enabled)
+  if(rawLyricLines.length)reFilterLyrics()
+  saveLyricFilterSettings()
+  notifyLyricSettingsChange()
 }
 function applyLyricFilterRegex(pattern){
   var next=String(pattern||'').trim()
   if(next){
     try{new RegExp(next)}catch(e){
-      updateLyricFilterControls()
-      return
+      notifyLyricSettingsChange()
+      return false
     }
   }
   lyricFilterRegex=next
   if(lyricFilterEnabled!==false)reFilterLyrics()
   saveLyricFilterSettings()
-  updateLyricFilterControls()
+  notifyLyricSettingsChange()
+  return true
 }
-document.getElementById('lyric-filter-on').onclick=function(){
-  if(lyricFilterEnabled!==false)return
-  lyricFilterEnabled=true
-  if(rawLyricLines.length)reFilterLyrics()
-  updateLyricFilterControls()
-  saveLyricFilterSettings()
-}
-document.getElementById('lyric-filter-off').onclick=function(){
-  if(lyricFilterEnabled===false)return
-  lyricFilterEnabled=false
-  if(rawLyricLines.length)reFilterLyrics()
-  updateLyricFilterControls()
-  saveLyricFilterSettings()
-}
-var filterRegexInput=document.getElementById('lyric-filter-regex-input')
-filterRegexInput.addEventListener('change',function(){applyLyricFilterRegex(filterRegexInput.value)})
-filterRegexInput.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();applyLyricFilterRegex(filterRegexInput.value)}})
-document.getElementById('lyric-filter-reset-btn').onclick=function(){
+function resetLyricFilterRegex(){
   lyricFilterRegex=''
-  filterRegexInput.value=DEFAULT_LYRIC_FILTER_REGEX
   if(lyricFilterEnabled!==false)reFilterLyrics()
   saveLyricFilterSettings()
+  notifyLyricSettingsChange()
 }
 var volTrack=document.getElementById('sm-volume-track');
 var volDragging=false;
@@ -1358,117 +1216,38 @@ volTrack.addEventListener('pointermove',function(e){
   volSeek(e);
 },true);
 volTrack.addEventListener('pointerup',function(){volDragging=false},true);
-// 动画模式下拉菜单（13 种模式，经 FoliaRegistry 调度）
-var animBtn=document.getElementById('sm-anim-btn');
-var animPopup=document.getElementById('sm-anim-popup');
-var animOptions=animPopup.querySelectorAll('.sm-anim-option');
-var animPopupOpen=false;
-function toggleAnimPopup(){
-  // 关闭其他弹窗
-  intensityPopup.classList.remove('open');intensityPopupOpen=false;
-  bgPopup.classList.remove('open');bgPopupOpen=false;
-  animPopupOpen=!animPopupOpen;
-  animPopup.classList.toggle('open',animPopupOpen);
-}
-// 同步动画模式按钮文本与选中态（data-val 均为新 id）
-function syncAnimModeUI(val){
-  var animOpt=document.querySelector('#sm-anim-popup .sm-anim-option[data-val="'+val+'"]');
-  if(animOpt)animBtn.textContent=animOpt.textContent;
-  animOptions.forEach(function(o){o.classList.toggle('selected',o.getAttribute('data-val')===val)});
-}
+// ===== 动画模式/强度/背景/随机（UI 在样式设置窗口；此处为纯逻辑函数） =====
 function setAnimMode(val){
   // 旧 id 自动映射（folia-animMode 可能存的是旧体系 id）
   currentAnimMode=window.FoliaRegistry.resolveId(val);
-  syncAnimModeUI(currentAnimMode);
-  animPopup.classList.remove('open');animPopupOpen=false;
   saveSettings();
   sendCmd('set-anim-mode',{mode:currentAnimMode});
   switchToMode(currentAnimMode);
-}
-animBtn.onclick=function(e){e.stopPropagation();toggleAnimPopup()};
-animOptions.forEach(function(opt){
-  opt.onclick=function(){setAnimMode(this.getAttribute('data-val'))};
-});
-// 强度下拉菜单
-var intensityBtn=document.getElementById('sm-intensity-btn');
-var intensityPopup=document.getElementById('sm-intensity-popup');
-var intensityOptions=intensityPopup.querySelectorAll('.sm-anim-option');
-var intensityPopupOpen=false;
-function toggleIntensityPopup(){
-  animPopup.classList.remove('open');animPopupOpen=false;
-  bgPopup.classList.remove('open');bgPopupOpen=false;
-  intensityPopupOpen=!intensityPopupOpen;
-  intensityPopup.classList.toggle('open',intensityPopupOpen);
+  if(window.FoliaStyleWindow&&window.FoliaStyleWindow.onModeChange){
+    window.FoliaStyleWindow.onModeChange();
+  }
 }
 function setIntensity(val){
+  if(val!=='calm'&&val!=='normal'&&val!=='chaotic')return;
   currentIntensity=val;
-  var iOpt=document.querySelector('#sm-intensity-popup .sm-anim-option[data-val="'+val+'"]');
-  if(iOpt)intensityBtn.textContent=iOpt.textContent;
-  intensityOptions.forEach(function(o){o.classList.toggle('selected',o.getAttribute('data-val')===val)});
-  intensityPopup.classList.remove('open');intensityPopupOpen=false;
   // 强度变化立即写入主题并广播给当前模式/背景
   currentTheme=applyIntensity(currentTheme);
   broadcastTheme();
   saveSettings();
   sendCmd('set-intensity',{intensity:val});
 }
-intensityBtn.onclick=function(e){e.stopPropagation();toggleIntensityPopup()};
-intensityOptions.forEach(function(opt){
-  opt.onclick=function(){setIntensity(this.getAttribute('data-val'))};
-});
-// 背景模式下拉菜单（6 种背景，经 FoliaBackgrounds 调度；复用 sm-anim-wrap 样式）
-var bgBtn=document.getElementById('folia-bg-btn');
-var bgPopup=document.getElementById('folia-bg-popup');
-var bgOptions=bgPopup.querySelectorAll('.sm-anim-option');
-var bgPopupOpen=false;
-function toggleBgPopup(){
-  animPopup.classList.remove('open');animPopupOpen=false;
-  intensityPopup.classList.remove('open');intensityPopupOpen=false;
-  bgPopupOpen=!bgPopupOpen;
-  bgPopup.classList.toggle('open',bgPopupOpen);
-}
-// 同步背景模式按钮文本与选中态
-function syncBackgroundUI(){
-  var bgOpt=document.querySelector('#folia-bg-popup .sm-anim-option[data-val="'+backgroundMode+'"]');
-  if(bgOpt)bgBtn.textContent=bgOpt.textContent;
-  bgOptions.forEach(function(o){o.classList.toggle('selected',o.getAttribute('data-val')===backgroundMode)});
-  // 网页背景的 URL 管理面板显隐与列表跟随背景模式刷新
-  renderUrlBgPanel();
-  // 透明背景面板（滑块 + 毛玻璃三段）跟随背景模式显隐并同步状态
-  syncTransparentPanel();
-}
-bgBtn.onclick=function(e){e.stopPropagation();toggleBgPopup()};
-bgOptions.forEach(function(opt){
-  opt.onclick=function(){setBackgroundMode(this.getAttribute('data-val'))};
-});
 function setBackgroundMode(val){
-  bgPopup.classList.remove('open');bgPopupOpen=false;
   switchToBackground(val);
   saveSettings();
+  if(window.FoliaStyleWindow&&window.FoliaStyleWindow.onBackgroundChange){
+    window.FoliaStyleWindow.onBackgroundChange();
+  }
 }
-// ===== 每首歌随机动画开关 =====
-function updateRandomControls(){
-  document.getElementById('folia-random-on').classList.toggle('active',randomModePerSong);
-  document.getElementById('folia-random-off').classList.toggle('active',!randomModePerSong);
+// 每首歌随机动画开关（样式设置窗口「动画」页）
+function setRandomPerSong(enabled){
+  randomModePerSong=Boolean(enabled);
+  saveSettings();
 }
-document.getElementById('folia-random-on').onclick=function(){
-  if(randomModePerSong)return;
-  randomModePerSong=true;
-  updateRandomControls();
-  saveSettings();
-};
-document.getElementById('folia-random-off').onclick=function(){
-  if(!randomModePerSong)return;
-  randomModePerSong=false;
-  updateRandomControls();
-  saveSettings();
-};
-// 点击外部关闭所有弹窗
-document.addEventListener('click',function(){
-  if(animPopupOpen){animPopup.classList.remove('open');animPopupOpen=false}
-  if(intensityPopupOpen){intensityPopup.classList.remove('open');intensityPopupOpen=false}
-  if(bgPopupOpen){bgPopup.classList.remove('open');bgPopupOpen=false}
-});
 // 播放列表按钮 - 切换播放列表子页面
 var smQueue=document.getElementById('sm-queue');
 function renderSmQueue(){
@@ -1597,8 +1376,10 @@ function tick(now){
     var lyricT=effectiveLyricTimeMs()/1000;
     var newIdx=window.FoliaLyricsData.findLatestActiveLineIndex(S.adaptedLines,lyricT);
     if(newIdx!==S.lyricIndex)S.lyricIndex=newIdx;
-    if(activeMode&&activeMode.tick){
-      var frameState={
+    var frameState=null;
+    // 样式设置窗口的实时预览源：窗口打开时每帧分发（节省起见仅在有人订阅时组装）
+    if(frameListeners.length){
+      frameState={
         currentTime:lyricT,dt:dt,
         currentLineIndex:S.lyricIndex,
         lines:S.adaptedLines,theme:currentTheme,
@@ -1606,11 +1387,27 @@ function tick(now){
         isPlaying:S.isPlaying,showText:true,
         songTitle:S.songTitle,songArtist:S.songArtist,songAlbum:S.songAlbum,coverUrl:S.coverUrl
       };
+      for(var li=0;li<frameListeners.length;li++){
+        try{frameListeners[li](frameState)}catch(e){}
+      }
+    }
+    // 主页面模式：窗口打开时暂停（GPU 让给预览舞台），关窗恢复
+    if(!mainModePaused&&activeMode&&activeMode.tick){
+      if(!frameState){
+        frameState={
+          currentTime:lyricT,dt:dt,
+          currentLineIndex:S.lyricIndex,
+          lines:S.adaptedLines,theme:currentTheme,
+          audioPower:S.rms,audioBands:buildAudioBands(),
+          isPlaying:S.isPlaying,showText:true,
+          songTitle:S.songTitle,songArtist:S.songArtist,songAlbum:S.songAlbum,coverUrl:S.coverUrl
+        };
+      }
       try{activeMode.tick(frameState)}catch(e){console.error('[Folia] 模式 tick 异常',e)}
     }
   }
-  // 背景帧驱动（不依赖歌词，暂停时由背景自行冻结）
-  if(activeBg&&activeBg.tick){
+  // 背景帧驱动（不依赖歌词，暂停时由背景自行冻结；样式窗口打开时暂停主页面背景，GPU 让给预览）
+  if(!mainModePaused&&activeBg&&activeBg.tick){
     try{activeBg.tick({audioPower:S.rms,audioBands:buildAudioBands(),isPlaying:S.isPlaying,dt:dt,coverUrl:S.coverUrl})}catch(e){}
   }
   scheduleNextFrame();
@@ -1627,25 +1424,144 @@ function scheduleNextFrame(){
   }
 }
 
+// ===== 外观应用（字号/字重/整体透明度，样式设置窗口「字体」页写入） =====
+// 字号缩放：保存 + 热更当前模式（各模式均消费 setFontScale）
+function applyFontScale(scale){
+  var clamped=Math.min(1.4,Math.max(0.85,Number(scale)||1));
+  window.FoliaTunings.setAppearance({fontScale:clamped});
+  if(activeMode&&typeof activeMode.setFontScale==='function'){
+    try{activeMode.setFontScale(clamped)}catch(e){}
+  }
+  if(window.FoliaStyleWindow&&window.FoliaStyleWindow.onAppearanceChange){
+    window.FoliaStyleWindow.onAppearanceChange();
+  }
+}
+// 字重：写 CSS 变量 --lyric-font-weight（模式经 foliaGetLyricFontWeight 取值；0=自动）
+function applyFontWeight(weight){
+  window.FoliaTunings.setAppearance({fontWeight:Math.round(Number(weight)||0)});
+  applyLyricFontWeight();
+  if(window.FoliaStyleWindow&&window.FoliaStyleWindow.onAppearanceChange){
+    window.FoliaStyleWindow.onAppearanceChange();
+  }
+}
+// 整体透明度：作用于歌词模式层容器（背景层不受影响，对齐上游 visualizerOpacity 语义）
+function applyVisualizerOpacity(opacity){
+  var clamped=Math.min(1,Math.max(0.2,Number(opacity)||1));
+  window.FoliaTunings.setAppearance({visualizerOpacity:clamped});
+  var host=document.getElementById('folia-mode-host');
+  if(host)host.style.opacity=String(clamped);
+  if(window.FoliaStyleWindow&&window.FoliaStyleWindow.onAppearanceChange){
+    window.FoliaStyleWindow.onAppearanceChange();
+  }
+}
+
+// ===== 对样式设置窗口的桥接 API =====
+// 窗口（window/style-window.js）运行于同一 iframe，直接调用 bridge 内部函数与状态；
+// 回调（onModeChange 等）由窗口按需挂到 window.FoliaStyleWindow 上
+window.FoliaBridge={
+  // 状态读取（返回快照副本，避免窗口直接持有内部引用）
+  getState:function(){
+    var appearance=window.FoliaTunings?window.FoliaTunings.getAppearance():null;
+    return{
+      animMode:currentAnimMode,
+      intensity:currentIntensity,
+      backgroundMode:backgroundMode,
+      randomModePerSong:randomModePerSong,
+      theme:currentTheme,
+      track:S.track,
+      isPlaying:S.isPlaying,
+      adaptedLines:S.adaptedLines,
+      lyricIndex:S.lyricIndex,
+      currentTimeMs:getLocalTimeMs(),
+      coverUrl:S.coverUrl,
+      songTitle:S.songTitle,
+      songArtist:S.songArtist,
+      rms:S.rms,
+      coverBlur:S.coverBlur,
+      windowBgState:windowBgState,
+      transparentOverlay:transparentOverlay,
+      transparentFrost:transparentFrost,
+      lyricFilterEnabled:lyricFilterEnabled,
+      lyricFilterRegex:lyricFilterRegex,
+      defaultLyricFilterRegex:DEFAULT_LYRIC_FILTER_REGEX,
+      lyricTimeOffset:normalizeLyricTimeOffset(lyricTimeOffset),
+      appearance:appearance,
+      settingsOpen:settingsOpen
+    };
+  },
+  // 样式（动画 tab）
+  setAnimMode:setAnimMode,
+  setIntensity:setIntensity,
+  applyModeTuning:applyModeTuning,
+  setRandomPerSong:setRandomPerSong,
+  // 背景 tab
+  setBackgroundMode:setBackgroundMode,
+  applyBgTuning:function(bgId,tuning){
+    if(window.FoliaBackgrounds.resolveId(bgId)!==backgroundMode)return;
+    // 背景实例无热更接口：销毁重建（switchBackground 幂等，同 id 不重配 config，须先销毁）
+    if(window.FoliaBackgrounds.destroyActive)window.FoliaBackgrounds.destroyActive();
+    activeBg=null;
+    switchToBackground(backgroundMode);
+  },
+  setCoverBlur:setCoverBlur,
+  setTransparentOverlay:setTransparentOverlay,
+  setTransparentFrost:setTransparentFrost,
+  // URL 背景（背景 tab 网页面板）
+  getUrlBgConfig:urlBgConfig,
+  addUrlBgItem:addUrlBgItem,
+  removeUrlBgItem:removeUrlBgItem,
+  selectUrlBgItem:selectUrlBgItem,
+  // 字体 tab
+  applyFontScale:applyFontScale,
+  applyFontWeight:applyFontWeight,
+  applyVisualizerOpacity:applyVisualizerOpacity,
+  // 全局 tab（歌词过滤/时间矫正）
+  setLyricFilterEnabled:setLyricFilterEnabled,
+  applyLyricFilterRegex:applyLyricFilterRegex,
+  resetLyricFilterRegex:resetLyricFilterRegex,
+  setLyricTimeOffset:setLyricTimeOffset,
+  // 实时预览帧订阅（实时源）：返回注销函数
+  onFrame:function(cb){
+    if(typeof cb!=='function')return function(){};
+    frameListeners.push(cb);
+    return function(){
+      var idx=frameListeners.indexOf(cb);
+      if(idx>=0)frameListeners.splice(idx,1);
+    };
+  },
+  // 主页面模式暂停（窗口打开时暂停主页面渲染，GPU 让给预览舞台）
+  setMainModePaused:function(paused){ mainModePaused=Boolean(paused) },
+  sendCmd:sendCmd
+};
+
 // ===== 启动 =====
 // 恢复动画模式：localStorage 可能存的是旧体系 id，经注册表映射；默认 classic（流光，与原版一致）
 currentAnimMode=window.FoliaRegistry.resolveId(localStorage.getItem('folia-animMode')||'classic');
-syncAnimModeUI(currentAnimMode);
 // 初始化主题（默认主题 + 当前强度；切歌后由封面取色异步更新）
 currentTheme=Object.assign({},window.FoliaTheme.DEFAULT_THEME,{animationIntensity:currentIntensity});
-// 挂载初始模式与背景（vendor 与脚本由注册表按需懒加载）
+// 恢复外观设置（字重 CSS 变量 + 模式层整体透明度）
+applyLyricFontWeight();
+(function(){
+  var appearance=window.FoliaTunings?window.FoliaTunings.getAppearance():null;
+  if(appearance){
+    var modeHost=document.getElementById('folia-mode-host');
+    if(modeHost)modeHost.style.opacity=String(appearance.visualizerOpacity);
+  }
+})();
+// 挂载初始模式与背景（vendor 与脚本由注册表按需懒加载；switchToMode 携带保存的 tuning 与字号）
 switchToMode(currentAnimMode);
 switchToBackground(backgroundMode);
 // 旧背景兼容层初始显隐（geo-layer 恒隐藏）
 updateLegacyLayers();
-// 恢复封面模糊按钮状态
-updateCoverBlurBtn();
-// 同步每首歌随机动画开关初始显示
-updateRandomControls();
-// 同步歌词时间矫正控件初始显示
-updateLyricOffsetControls();
-// 同步歌词过滤控件初始显示
-updateLyricFilterControls();
+// 样式设置窗口入口（设置子页顶部入口按钮，窗口模块未加载时不可用）
+var styleEntryBtn=document.getElementById('sm-btn-style-window');
+if(styleEntryBtn){
+  styleEntryBtn.onclick=function(){
+    if(window.FoliaStyleWindow&&window.FoliaStyleWindow.open){
+      window.FoliaStyleWindow.open();
+    }
+  };
+}
 requestAnimationFrame(tick);
 parent.postMessage({source:'echo-folia-child',type:'echo-folia:ready'},'*');
 
