@@ -51,6 +51,11 @@
     var destroyed = false
     var building = false
     var buildQueued = false
+    // 失败自愈：宿主切窗口透明材质（DWM）等会触发 WebGL 上下文丢失 → 自动重建，
+    // 若重建恰好赶上 GPU 恢复中而失败，没有重试就会永久卡在兜底文字上——补指数退避重试。
+    var retryTimer = 0
+    var retryDelay = 1500
+    var frameOkStreak = 0
 
     var theme = null
     var lines = []
@@ -139,13 +144,20 @@
         // app.init 是异步的：建不起来（没有 WebGL 等）时 holding 一直为 true，落定后标记失败显示兜底文字。
         if (runtime.readyPromise) {
           runtime.readyPromise.then(function (rt) {
-            if (!destroyed && rt && rt.holding) runtimeFailed = true
+            if (destroyed) return
+            if (rt && rt.holding) {
+              runtimeFailed = true
+              updateFallback()
+              scheduleRetry()
+            } else {
+              retryDelay = 1500 // 重建成功：复位退避
+            }
           })
         }
-        runtimeFailed = false
       } catch (e) {
         runtimeFailed = true
         runtime = null
+        scheduleRetry()
         console.warn('[FoliaModeHanabi] 运行时创建失败', e)
       }
       building = false
@@ -159,6 +171,17 @@
       if (destroyed) return
       if (building) { buildQueued = true; return }
       ensureRuntime()
+    }
+
+    /** 运行时建失败/持续帧异常后的自愈重试：延迟重建，失败指数退避，成功后复位。 */
+    function scheduleRetry() {
+      if (destroyed || retryTimer) return
+      retryTimer = window.setTimeout(function () {
+        retryTimer = 0
+        if (destroyed) return
+        retryDelay = Math.min(8000, retryDelay * 2)
+        scheduleRebuild()
+      }, retryDelay)
     }
 
     /** runtimeFailed 时的兜底文字：显示当前行（与上游一致，纯音乐 / showText 关时留空）。 */
@@ -223,14 +246,29 @@
         }
         if (!runtime) { updateFallback(); return }
         runtime.setInput(currentTime)
+        var frameOk = true
         try {
           runtime.renderFrame(performance.now())
         } catch (e) {
-          // 帧异常不阻塞主循环（首帧着色器编译失败等）。
+          frameOk = false
+          // 帧异常不阻塞主循环（首帧着色器编译失败等）。持续异常多为上下文未恢复：排一次自愈重建。
           if (!runtimeFailed) {
             runtimeFailed = true
             console.warn('[FoliaModeHanabi] 帧异常', e)
           }
+          scheduleRetry()
+        }
+        // 运行时实际在出画面（init 完成/帧异常自愈）：连续 30 帧正常后撤下兜底文字；
+        // holding 期 renderFrame 短路不算成功帧，避免初始化中误撤。
+        if (frameOk) {
+          if (!runtime.holding) {
+            frameOkStreak += 1
+            if (runtimeFailed && frameOkStreak >= 30) runtimeFailed = false
+          } else {
+            frameOkStreak = 0
+          }
+        } else {
+          frameOkStreak = 0
         }
         updateFallback()
       },
@@ -240,6 +278,8 @@
       },
       destroy: function () {
         destroyed = true
+        window.clearTimeout(retryTimer)
+        retryTimer = 0
         window.clearTimeout(committed.graceTimer)
         if (runtime) {
           try { runtime.destroy() } catch (e) { /* 忽略 */ }

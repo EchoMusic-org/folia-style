@@ -444,6 +444,10 @@
     var runtime = null
     var runtimeFailed = false
     var destroyed = false
+    // 失败自愈：宿主切窗口透明材质（DWM）等会触发 WebGL 上下文丢失 → 自动重建，
+    // 若重建恰好赶上 GPU 恢复中而失败，没有重试就会永久卡在兜底文字上——补指数退避重试。
+    var retryTimer = 0
+    var retryDelay = 1500
 
     var theme = null
     var lines = []
@@ -511,11 +515,19 @@
           seeThrough: resolveSeeThrough(),
           scene: resolveScene(),
           glass: resolveGlass(),
-          onFirstFrame: function () { /* 上游 setDrawn(true)：插件无小图等帧逻辑，留挂钩 */ },
+          onFirstFrame: function () {
+            // 首帧真出画：撤下兜底文字（自愈重建成功也走这里）
+            if (runtimeFailed) {
+              runtimeFailed = false
+              updateFallback()
+            }
+            retryDelay = 1500
+          },
           onFailed: function () {
-            // WebGL2 不可用 / 着色器编不过 / 上下文丢失：退回只显示当前这句。
+            // WebGL2 不可用 / 着色器编不过 / 上下文丢失：退回只显示当前这句，并排自愈重试。
             runtimeFailed = true
             updateFallback()
+            scheduleRetry()
           },
           onRestored: function () {
             // 上下文回来了：整个运行时重建（上游 generation++ 触发 useEffect 重建）。
@@ -527,10 +539,11 @@
         runtime.setDaylight(daylight)
         runtime.setPlayback(paused, stillMode)
         runtime.setSong(songContext())
-        runtimeFailed = false
+        // runtimeFailed 不在此处复位：等 onFirstFrame（真出画）再撤下兜底，避免编译期黑屏闪变
       } catch (e) {
         runtimeFailed = true
         runtime = null
+        scheduleRetry()
         console.warn('[FoliaModeNebbia] 运行时创建失败', e)
       }
       updateFallback()
@@ -539,6 +552,17 @@
     function scheduleRebuild() {
       if (destroyed) return
       ensureRuntime()
+    }
+
+    /** 运行时建失败/帧异常后的自愈重试：延迟重建，失败指数退避，首帧成功后复位。 */
+    function scheduleRetry() {
+      if (destroyed || retryTimer) return
+      retryTimer = window.setTimeout(function () {
+        retryTimer = 0
+        if (destroyed) return
+        retryDelay = Math.min(8000, retryDelay * 2)
+        scheduleRebuild()
+      }, retryDelay)
     }
 
     /** runtimeFailed 时的兜底文字：显示当前行（与上游一致，纯音乐 / showText 关时留空）。 */
@@ -626,11 +650,12 @@
           // bridge tick 驱动：上游 rAF 循环 → 入口每帧调 frame()（着色器没编好时 frame 内部直接返回、下帧再问）。
           runtime.frame()
         } catch (e) {
-          // 帧异常不阻塞主循环（着色器编译失败等已在 runtime 内标 dead）。
+          // 帧异常不阻塞主循环（着色器编译失败等已在 runtime 内标 dead）。持续异常多为上下文未恢复：排自愈重建。
           if (!runtimeFailed) {
             runtimeFailed = true
             console.warn('[FoliaModeNebbia] 帧异常', e)
           }
+          scheduleRetry()
         }
         updateFallback()
       },
@@ -654,6 +679,8 @@
       },
       destroy: function () {
         destroyed = true
+        window.clearTimeout(retryTimer)
+        retryTimer = 0
         window.clearTimeout(committed.graceTimer)
         if (runtime) {
           try { runtime.destroy() } catch (e) { /* 忽略 */ }

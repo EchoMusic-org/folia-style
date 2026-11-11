@@ -35,6 +35,11 @@
     var destroyed = false
     var building = false
     var buildQueued = false
+    // 失败自愈：宿主切窗口透明材质（DWM）等会触发 WebGL 上下文丢失 → 自动重建，
+    // 若重建恰好赶上 GPU 恢复中而失败，没有重试就会永久卡在兜底文字上——补指数退避重试。
+    var retryTimer = 0
+    var retryDelay = 1500
+    var frameOkStreak = 0
 
     var theme = null
     var lines = []
@@ -115,6 +120,7 @@
       } catch (e) {
         runtimeFailed = true
         runtime = null
+        scheduleRetry()
         console.warn('[FoliaModeMachi] 运行时创建失败', e)
       }
       building = false
@@ -128,6 +134,17 @@
       if (destroyed) return
       if (building) { buildQueued = true; return }
       ensureRuntime()
+    }
+
+    /** 运行时建失败/持续帧异常后的自愈重试：延迟重建，失败指数退避，成功后复位。 */
+    function scheduleRetry() {
+      if (destroyed || retryTimer) return
+      retryTimer = window.setTimeout(function () {
+        retryTimer = 0
+        if (destroyed) return
+        retryDelay = Math.min(8000, retryDelay * 2)
+        scheduleRebuild()
+      }, retryDelay)
     }
 
     var instance = {
@@ -183,14 +200,24 @@
           runtime.setShowText(showText)
         }
         runtime.setInput(currentTime, audioPower)
+        var frameOk = true
         try {
           runtime.renderFrame(performance.now())
         } catch (e) {
-          // 帧异常不阻塞主循环（首帧着色器编译失败等）。
+          frameOk = false
+          // 帧异常不阻塞主循环（首帧着色器编译失败等）。持续异常多为上下文未恢复：排一次自愈重建。
           if (!runtimeFailed) {
             runtimeFailed = true
             console.warn('[FoliaModeMachi] 帧异常', e)
           }
+          scheduleRetry()
+        }
+        // 连续 30 帧正常出画后撤下兜底文字（帧异常自愈 / 重建成功）
+        if (frameOk) {
+          frameOkStreak += 1
+          if (runtimeFailed && frameOkStreak >= 30) runtimeFailed = false
+        } else {
+          frameOkStreak = 0
         }
         if (this._fallback) {
           var text = ''
@@ -205,6 +232,8 @@
       },
       destroy: function () {
         destroyed = true
+        window.clearTimeout(retryTimer)
+        retryTimer = 0
         window.clearTimeout(committed.graceTimer)
         if (runtime) {
           try { runtime.destroy() } catch (e) { /* 忽略 */ }
