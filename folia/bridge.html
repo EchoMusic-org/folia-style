@@ -629,6 +629,10 @@ function onSongMaybeChanged(){
   var key=songKeyOf();
   if(key!==lastSongKeyForTheme){
     lastSongKeyForTheme=key;
+    // 换歌：智能动感节拍/鼓点检测清表重测
+    if(window.FoliaBeatFx){
+      window.FoliaBeatFx.resetForSong();
+    }
     if(window.FoliaBeatFx){
       window.FoliaBeatFx.resetForSong();
     }
@@ -900,6 +904,10 @@ window.addEventListener('message',function(ev){
         S.bass=bassSum/bLen/255*200;
         S.mid=midSum/bLen/255*200;
         S.treble=trebSum/(bins.length-bLen*2)/255*200;
+      }
+      // 智能动感：频谱帧喂给共享节拍检测（实时节拍表 + 底鼓/军鼓），效果强度在样式窗口「全局」tab 配置
+      if(window.FoliaBeatFx){
+        window.FoliaBeatFx.feedFrame({bins:d.payload.bins||[],rms:S.rms,peak:S.peak,state:d.payload.state||'idle',timePos:d.payload.timePos});
       }
       break;
     case'echo-folia:appearance':
@@ -1358,6 +1366,10 @@ var lastWrittenPct=-1;
 function tick(now){
   var dt=lastFrameNow?Math.min((now-lastFrameNow)/1000,0.05):1/60;
   lastFrameNow=now;
+  // 智能动感节拍时钟：每帧推进包络（暂停时只衰减，seek 由 feedFrame 内部处理）
+  if(window.FoliaBeatFx){
+    window.FoliaBeatFx.tick(effectiveLyricTimeMs()/1000,S.isPlaying);
+  }
   if(window.FoliaBeatFx){
     window.FoliaBeatFx.tick(effectiveLyricTimeMs()/1000,S.isPlaying);
   }

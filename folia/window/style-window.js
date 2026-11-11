@@ -439,7 +439,7 @@
         bridge().setAnimMode(mode.id)
       })
       refs.shelf.appendChild(card)
-      // 缩略图：优先活实例冻结快照（真实渲染一帧后冻结克隆），不可用时回退 canvas 简笔图（缓存 dataURL）
+      // 缩略图：优先活实例冻结快照（真实渲染），不可用时回退 canvas 简笔图（缓存 dataURL）
       var key = mode.id
       var frozen = window.FoliaFrozenPicture
         ? window.FoliaFrozenPicture.peek(mode.id, st.theme, 'default')
@@ -449,14 +449,21 @@
         var frozenClone = frozen.cloneNode(true)
         frozenClone.classList.add('fsw-frozen-thumb')
         card.insertBefore(frozenClone, label)
-      } else {
-        if (thumbCache[key]) {
-          drawThumbFromCache(canvas, thumbCache[key])
-        } else {
-          drawThumb(canvas, mode.id, st.theme, false)
-          thumbCache[key] = canvas.toDataURL()
-        }
+      } else if (thumbCache[key]) {
+        drawThumbFromCache(canvas, thumbCache[key])
         // 排队做真实快照（串行做图，好了换上）
+        if (window.FoliaFrozenPicture) {
+          window.FoliaFrozenPicture.request(mode.id, st.theme, 'default', function (node) {
+            if (node && card.isConnected) {
+              canvas.style.display = 'none'
+              node.classList.add('fsw-frozen-thumb')
+              card.insertBefore(node, label)
+            }
+          })
+        }
+      } else {
+        drawThumb(canvas, mode.id, st.theme, false)
+        thumbCache[key] = canvas.toDataURL()
         if (window.FoliaFrozenPicture) {
           window.FoliaFrozenPicture.request(mode.id, st.theme, 'default', function (node) {
             if (node && card.isConnected) {
@@ -645,6 +652,7 @@
     colBody.appendChild(Kit.groupTitle((schema ? schema.label : modeId) + '参数'))
     if (!schema || !schema.groups.length) {
       colBody.appendChild(Kit.el('div', 'fsw-empty-hint', '这个样式没有参数'))
+      renderBeatEffects(colBody, modeId)
       tabRefreshers.visualizer = function () { renderTab() }
       return
     }
@@ -672,6 +680,7 @@
       }
     })
     colBody.appendChild(renderer.root)
+    renderBeatEffects(colBody, modeId)
     tabRefreshers.visualizer = function () { renderTab() }
   }
 
@@ -1005,6 +1014,30 @@
     plus.addEventListener('click', function () { bridge().setLyricTimeOffset(offset + 0.1) })
     timeCard.appendChild(Kit.row('时间矫正', stepper, { hint: '+ 提前 / − 延后，仅影响歌词时间轴' }))
     colBody.appendChild(timeCard)
+
+    // 智能动感总开关（上游 SmartBeatSettingsCard）：开启后各样式「动画」页的节拍效果生效
+    var fx = window.FoliaBeatFx
+    if (fx) {
+      colBody.appendChild(Kit.groupTitle('智能动感'))
+      var beatCard = Kit.el('div', 'fsw-card')
+      var beatOn = fx.getMode() === 'on'
+      var beatControl = Kit.segmented({
+        options: [
+          { value: 'off', label: '关闭' },
+          { value: 'on', label: '开启' }
+        ],
+        value: beatOn ? 'on' : 'off',
+        onChange: function (v) {
+          fx.setMode(v)
+          renderTab()
+        }
+      })
+      beatCard.appendChild(Kit.row('智能动感', beatControl.root, {
+        hint: '跟随歌曲节拍驱动样式效果（主程序频谱实时检测节拍与鼓点）；各样式的效果在其「动画」页配置'
+      }))
+      colBody.appendChild(beatCard)
+    }
+    tabRefreshers.global = function () { renderTab() }
   }
 
   function formatOffset(v) {

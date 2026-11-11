@@ -155,13 +155,24 @@ iframe → 宿主（`bridge.html` 内 `parent.postMessage`）：
 - **明确不做**：字体样式选择与自定义字体（字体族跟随宿主）、画布图片上传池（tempera layerImages）、背景自定义图片上传。
 - **已知取舍**：cappella 头像来源对已渲染消息不回溯；字幕内容（翻译/罗马音）跟随宿主歌词页设置（iframe 内 secondary 为混合值，不可拆分）；字重全局覆盖仅接 classic/cadenza/partita/tilt/claddagh 五个模式（machi/花火/雾笺按上游 ownFontSize 自动排版不接）。
 
-## 上游样式移植（町景）
+## 上游三大样式移植（町景 / 花火 / 雾笺）
 
 均整只移植自 folia-major（React+TS+Pixi/three/原生 WebGL2 → 原生 JS IIFE 模块目录 + 单入口），全部配置项开放（`runtime/tunings.js` schema 与上游 SettingsPanel/zh-CN 文案逐项对齐）。
 
 - **町景 machi**（`folia/modes/machi/` 24 模块 + `scene-konbini/kowloon/station.js` 三场景 + `modes/machi.js`，vendor three）：正交 3D 微缩街景（三个场景按歌 seed 自动选），天空/天光/天气（雨雪雾/昼夜渐变）/湿地面（水洼+倒影+雨点闪光）/积雪/招牌（LED 屏逐字点亮、霓虹、のぼり旗、跑马灯）/车流/光柱/白气/后处理（墨线、贴地雾、bloom、横向光条、散景景深、色差暗角颗粒、FXAA）。画质六项（分辨率/抗锯齿/阴影/倒影/辉光/自动降级）全接；SMAA 档降级为 FXAA（vendor three 未含 examples，超采样不受影响）；取景控制条不移植（画布直接拖拽/右键平移/滚轮缩放，自定义视角松手停稳自动写回 tuning 对应场景）。
 - **共享底座**（`folia/runtime/`）：`seed-hash.js`（FNV-1a/mulberry32，上游 visualizerSeedHash）、`theme-color-math.js`（hex 色彩数学）、`beatfx.js`（智能动感：上游 clock.ts 节拍时钟 + 主程序频谱实时节拍/鼓点检测，见「智能动感」节）。- **花火 hanabi**（`folia/modes/hanabi/` 34 模块 + `modes/hanabi.js`，vendor pixi 8.20.1 ≈ 上游 8.21）：整歌编译镜头程序（段落/转场/50 预设烟花/确定性编译）、文字引擎（图集/9 排版/12 字底块/17 入场 9 强调 7 退场逐字动画）、PV 拼贴、烟花闭式解（14 种 BURST_PRESETS 全有解）、夜空/画框/片尾卡、全屏辉光（副歌权重）、随拍开花与推镜（智能动感，接 FoliaBeatFx）、换歌两帧交接（PixiSongSwap）+ 段落场景缓存（retire 逐帧释放）。移植规范见 `folia/modes/hanabi/PORTING.md`。
+- **移植差异通则**：- **花火 hanabi**（`folia/modes/hanabi/` 34 模块 + `modes/hanabi.js`，vendor pixi 8.20.1 ≈ 上游 8.21）：整歌编译镜头程序（段落/转场/50 预设烟花/确定性编译）、文字引擎（图集/9 排版/12 字底块/逐字动画）、PV 拼贴、烟花闭式解（14 种 BURST_PRESETS 全有解）、夜空/画框/片尾卡、全屏辉光（副歌权重）、随拍开花与推镜（智能动感，接 FoliaBeatFx）、换歌两帧交接 + 段落场景缓存（retire 逐帧释放）。移植规范见 `folia/modes/hanabi/PORTING.md`。
+- **雾笺 nebbia**（`folia/modes/nebbia/` + `modes/nebbia.js`，原生 WebGL2 无 vendor）：起雾玻璃上写字（笔顺骨架/手写变形）、雨窗/凝露/融雪三种玻璃、雨夜街景/梦海水族箱两种窗外、指纹抹除/哈气/水珠物理。
 - **移植差异通则**：MotionValue → tick 每帧注入数值；songCommit 简化为歌词签名 + 2s 纯音乐确认；programWarmup/预热不移植（首帧编译开销一次性）；上游全局歌词画布画质挡位（`render: 'global'`）按 1 倍 + 关/默认抗锯齿解释；lucide 图标走内嵌线稿兜底（`Raster.MACHI_ICONS` 等）；销毁纪律照上游（v8 Graphics 逐节点无参 destroy、纹理 destroy(true)、retired 逐帧释放）。
+
+## 智能动感（beatFx）
+
+- **数据源**：主程序 `ctx.audio.spectrum.subscribe`（Rust 引擎旁路 FFT，宿主 index.js 已订阅并 postMessage 转发 `echo-folia:spectrum` 帧）→ iframe `FoliaBeatFx.feedFrame` 实时检测：低频谱通量 → 底鼓、中高频 → 军鼓；拍周期取底鼓间隔中位数、小节相位由重音对齐；事件增量进表，seek（倒退/大跳）清表重测。宿主订阅参数调优：smoothing 0.82→0.6（利于通量检测）、关闭 waveform（省带宽）。
+- **节拍时钟**：上游 `services/beatFx/clock.ts` 直移植——按"听到的时间"走事件表，双包络（轻拍 160ms/重拍 200ms 衰减）、rotationSign 每拍翻转、fired 计数；seek 只重定位不爆发。
+- **开关与效果**：模式 `folia-smartBeat`（off/on，默认 off）；各效果 `{on, strength 0..2}` 存 `folia-beatEffects`。效果清单（`FoliaBeatFx.BEAT_EFFECT_DEFS`）：町景 霓虹随拍/鼓点涟漪/大屏闪拍、花火 随拍开花/随拍推镜、雾笺 疏雨轻车/舞潮踏拍。样式窗口「全局」页开关总控，「动画」页每样式效果行（开关+强度滑条）。关闭时各模式自动回退固定节拍（町景 simulatedBeat）或常态。
+- **上游差异**：上游用 beat_this（WebGPU 离线整曲节拍表）+ HTDemucs 鼓轨分离 + 人声包络；插件以实时频谱检测等价替代（整表确定性、seek 复现性弱于离线表，但拖动/暂停语义一致）。
+
+## 兼容与遗留
 
 - `LEGACY_PAGE_PATH = '/main/plugin/folia-style/player'`：旧版本插件曾以路由页承载，现在检测到就 replace 到 `/main/home` 并弹覆盖层。删/改这个字符串前搜一下 EchoMusic 主仓有没有链接进来。
 - 覆盖层通过监听 `stores.player.isLyricViewOpen` 触发；`closeOverlay` 会把它设回 false，两个方向都要保持同步，否则宿主播放器抽屉状态会漂移。
