@@ -171,7 +171,7 @@
   ]
 
   // ---------- TemperaTuning（内联自 src/types.ts 618~690 行） ----------
-  // 本插件没有设置 UI，tuning 恒为该默认值；接口保留以便未来扩展
+  // 设置窗口经 FoliaTunings schema 归一化传入并支持 setTuning 热更（tempera.js），此默认值为归一化基准
   var DEFAULT_TEMPERA_TUNING = {
     cameraIntensity: 1,
     // 逐字入场运动强度 0..2

@@ -6,7 +6,8 @@
 //   MotionValue（currentTime/audioPower/audioBands）→ { get() } 鸭子对象，闭包变量现读；
 //   useVisualizerSongCommit（已提交歌曲滞后门）→ 简化为"歌词签名 + 2 秒确认纯音乐"；
 //   VisualizerSubtitleOverlay → window.FoliaSubtitleOverlay；
-//   LumiereSettingsPanel → 不移植（本插件无 per-mode 设置面板），固定 DEFAULT_LUMIERE_TUNING。
+//   LumiereSettingsPanel（React 面板）→ 不移植，调参由样式设置窗口的声明式 schema 承载（FoliaTunings），
+//   场景运行时 setTuning 热更。
 // 运行时模块：window.FoliaLumiereScene.LumierePixiRuntime（Pixi 生命周期 + 逐帧更新）。
 (function () {
   'use strict'

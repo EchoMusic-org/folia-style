@@ -1,5 +1,6 @@
 // 流光模式：移植自 folia-major src/components/visualizer/classic/Visualizer.tsx（默认模式）
-// 逐词弹性动画：三层词结构（发光层/本体层/合唱涟漪），词状态机 waiting → active → passed，
+// 逐词弹性动画：两层词结构（发光层/本体层；原版另有合唱涟漪层，宿主行数据无 isChorus 未移植），
+// 词状态机 waiting → active → passed，
 // 行进出场按 renderHints 的 lineTransitionMode 分三档，整行呼吸浮动。
 // 语义布局单元（CJK 语义分组 + 粘着标点）与原版管线一致。
 (function () {
@@ -40,7 +41,7 @@
     var lineHost = null     // 行挂载点（AnimatePresence 等价）
     var currentLineEl = null
     var currentLineKey = null
-    var wordEls = []        // [{el, glowLayer, bodyLayer, word, config, renderProfile, status, rippleEl}]
+    var wordEls = []        // [{el, glowLayer, bodyLayer, word, config, renderProfile, status}]
     var intensity = 'normal'
     var fontScale = 1
     var theme = null

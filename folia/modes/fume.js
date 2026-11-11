@@ -15,7 +15,8 @@
   var Runtime = window.FoliaVisualizerRuntime
   var Anim = window.FoliaAnim
 
-  // 原版 DEFAULT_FUME_TUNING（types.ts）：插件不暴露调参 UI，直接使用默认值（保留 clamp 形态以便扩展）
+  // 原版 DEFAULT_FUME_TUNING（types.ts）：设置窗口经 FoliaTunings schema 归一化传入（tunings.js 有完整
+  // schema，支持 setTuning 热更），此默认值仅在 FoliaTunings 缺失时兜底
   var DEFAULT_FUME_TUNING = {
     hidePrintSymbols: false,
     disableGeometricBackground: true,

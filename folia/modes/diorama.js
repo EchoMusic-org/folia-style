@@ -9,7 +9,7 @@
 //   AnimatePresence 等待文案 → CSS opacity 过渡；
 //   VisualizerShell/背景层 → 宿主 bridge 管理，本模式不复制；
 //   VisualizerSubtitleOverlay → window.FoliaSubtitleOverlay；
-//   dioramaTuning（设置面板）→ 不转写，恒用 DEFAULT_DIORAMA_TUNING；
+//   dioramaTuning（设置面板）→ FoliaTunings schema 归一化传入（不支持热更，参数变化走重建）；
 //   seed（currentSongId）→ 插件无曲目 id，用 "歌名|歌手" 作确定性身份（参考 sonnet 先例）。
 // Canvas 装配对应：camera={{ position:[0,0.6,9], fov:55 }}（R3F 默认 near 0.1 / far 1000）、
 //   dpr=[1,2]、gl={{ alpha:true, antialias:true }}、R3F 默认 ACESFilmicToneMapping。
