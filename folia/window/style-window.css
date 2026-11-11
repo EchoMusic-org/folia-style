@@ -303,6 +303,17 @@
 
 /* ===== 主题（默认/AI主题/自定义 + 快速编辑对话框） ===== */
 .fsw-theme-actions{display:flex;gap:6px;flex:1;min-width:0;flex-wrap:wrap;justify-content:flex-end}
+/* 主题行的操作钮（切换深浅色/生成AI主题/编辑）：pill 形、按内容自适应宽，
+   不用 fsw-mini-btn（26px 圆形图标钮，塞文字会竖排挤压） */
+.fsw-theme-action{
+  height:26px;padding:0 10px;border-radius:9999px;border:none;flex-shrink:0;
+  background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.75);
+  font-size:11.5px;cursor:pointer;white-space:nowrap;
+  display:inline-flex;align-items:center;gap:4px;
+  transition:background 0.15s ease,color 0.15s ease;
+}
+.fsw-theme-action:hover{background:rgba(255,255,255,0.16);color:#fff}
+.fsw-theme-action:disabled{opacity:0.5;cursor:default}
 .fsw-modal-overlay{
   position:absolute;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
   background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);

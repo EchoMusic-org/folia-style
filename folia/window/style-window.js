@@ -735,7 +735,7 @@
     // 主题名 + 深浅色 + 生成 + 编辑
     var active = st.theme || {}
     var sideWrap = Kit.el('div', 'fsw-theme-actions')
-    var daylightBtn = Kit.el('button', 'fsw-mini-btn', dual.daylight ? '☀ 浅色' : '☾ 深色')
+    var daylightBtn = Kit.el('button', 'fsw-theme-action', dual.daylight ? '☀ 浅色' : '☾ 深色')
     daylightBtn.type = 'button'
     daylightBtn.title = '切换深浅色'
     daylightBtn.addEventListener('click', function () {
@@ -743,7 +743,7 @@
       renderTab()
     })
     sideWrap.appendChild(daylightBtn)
-    var genBtn = Kit.el('button', 'fsw-mini-btn', '✦ 生成AI主题')
+    var genBtn = Kit.el('button', 'fsw-theme-action', '✦ 生成AI主题')
     genBtn.type = 'button'
     genBtn.title = '从封面取色生成明暗双主题'
     genBtn.addEventListener('click', function () {
@@ -757,7 +757,7 @@
       })
     })
     sideWrap.appendChild(genBtn)
-    var editBtn = Kit.el('button', 'fsw-mini-btn', '🎨 编辑')
+    var editBtn = Kit.el('button', 'fsw-theme-action', '🎨 编辑')
     editBtn.type = 'button'
     editBtn.title = '快速编辑主题（明暗双侧四色 + 名称）'
     editBtn.addEventListener('click', function () {
