@@ -1391,7 +1391,29 @@
   function syncThemeVars() {
     var st = getState()
     var theme = st.theme || {}
-    root.style.setProperty('--fsw-accent', theme.accentColor || '#00f5d4')
+    // 设置窗口深浅色 token（照上游 settings kit 的 --st-* 体系）：表面色深浅两套固定值按 daylight 切，
+    // 文字/线/填充在 CSS 里跟随 --text-primary 做 color-mix；accent 取主题强调色，on-accent 按对比度选深/白
+    var dual = bridge().getDualThemeState()
+    var daylight = Boolean(dual && dual.daylight)
+    var accent = theme.accentColor || (daylight ? '#18181b' : '#f4f4f5')
+    var onAccent = '#ffffff'
+    var math = window.FoliaThemeColorMath
+    if (math && math.getContrastRatio) {
+      var dark = '#17171a'
+      onAccent = math.getContrastRatio(dark, accent) >= math.getContrastRatio('#ffffff', accent) ? dark : '#ffffff'
+    }
+    var set = root.style
+    set.setProperty('--text-primary', daylight ? '#18181b' : '#f4f4f5')
+    set.setProperty('--st-win', daylight ? '#f3f3f4' : '#1a1a1d')
+    set.setProperty('--st-side', daylight ? '#e9e9eb' : '#141416')
+    set.setProperty('--st-card', daylight ? '#ffffff' : '#232327')
+    set.setProperty('--st-menu', daylight ? '#ffffff' : '#2b2b30')
+    set.setProperty('--st-raise', daylight ? '#ffffff' : '#45454c')
+    set.setProperty('--st-knob', daylight ? '#ffffff' : '#ececee')
+    set.setProperty('--st-pv', daylight ? '#ececef' : '#151517')
+    set.setProperty('--st-err', daylight ? '#d04444' : '#ef6f6f')
+    set.setProperty('--fsw-accent', accent)
+    set.setProperty('--fsw-on-accent', onAccent)
     root._refs.stageBox.style.setProperty('--fsw-stage-bg', theme.backgroundColor || '#09090b')
   }
 
