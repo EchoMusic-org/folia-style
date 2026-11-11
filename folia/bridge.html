@@ -398,7 +398,20 @@ async function switchToMode(id){
     });
     if(activeMode.setTheme&&currentTheme)activeMode.setTheme(currentTheme);
     if(activeMode.setLines)activeMode.setLines(S.adaptedLines);
-  }catch(e){console.warn('[Folia] 模式切换失败',e)}
+    var diag=document.getElementById('folia-mode-load-error');
+    if(diag)diag.textContent='';
+  }catch(e){
+    console.warn('[Folia] 模式切换失败',e);
+    // 诊断(临时):装载/创建失败直接上屏,定位町景从未加载的问题,定位后撤
+    var host=document.getElementById('folia-mode-host');
+    if(host){
+      var diag2=document.getElementById('folia-mode-load-error')||document.createElement('div');
+      diag2.id='folia-mode-load-error';
+      diag2.style.cssText='position:absolute;left:0;right:0;bottom:26px;z-index:99;text-align:center;color:rgba(255,120,120,0.92);font-size:11px;pointer-events:none;padding:0 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+      diag2.textContent='M-DIAG '+id+': '+String((e&&e.message)||e).slice(0,170)+' @'+new Date().toISOString().slice(11,19);
+      host.appendChild(diag2);
+    }
+  }
   switchingMode=false;
 }
 

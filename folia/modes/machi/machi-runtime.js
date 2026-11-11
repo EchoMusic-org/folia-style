@@ -85,7 +85,7 @@
     this.scene = new THREE.Scene()
     this.camera = new CameraMod.MachiCamera()
     this.clock = new ClockMod()
-    this.sky = new SkyMod.MachiSky()
+    this.sky = new SkyMod() // machi-sky.js 导出的就是构造函数本体（无 { MachiSky } 包装）
     this.environmentDirty = true
     this.fade = 1
     this.fadePhase = 'idle'

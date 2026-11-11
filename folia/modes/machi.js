@@ -30,6 +30,7 @@
     var host = null
     var layerEl = null
     var runtimeHost = null
+    var diagLine = null
     var runtime = null
     var runtimeFailed = false
     var destroyed = false
@@ -120,6 +121,7 @@
       } catch (e) {
         runtimeFailed = true
         runtime = null
+        if (diagLine) diagLine.textContent = 'M-DIAG create: ' + String((e && e.message) || e).slice(0, 150) + ' @' + new Date().toISOString().slice(11, 19)
         scheduleRetry()
         console.warn('[FoliaModeMachi] 运行时创建失败', e)
       }
@@ -161,6 +163,10 @@
         fallback.className = 'folia-machi-fallback'
         fallback.style.cssText = 'pointer-events:none;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 10%;text-align:center;color:#f4f4f5;font-size:clamp(2rem,5.4vw,5.6rem);font-weight:700'
         layerEl.appendChild(fallback)
+        // 诊断行（临时）：把最近一次运行时错误直接上屏，定位町景加载问题用，定位后撤
+        diagLine = document.createElement('div')
+        diagLine.style.cssText = 'pointer-events:none;position:absolute;left:0;right:0;bottom:26px;text-align:center;color:rgba(255,120,120,0.9);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 12px'
+        layerEl.appendChild(diagLine)
         this._fallback = fallback
         host.appendChild(layerEl)
         ensureRuntime()
@@ -210,12 +216,16 @@
             runtimeFailed = true
             console.warn('[FoliaModeMachi] 帧异常', e)
           }
+          if (diagLine) diagLine.textContent = 'M-DIAG frame: ' + String((e && e.message) || e).slice(0, 150) + ' @' + new Date().toISOString().slice(11, 19)
           scheduleRetry()
         }
         // 连续 30 帧正常出画后撤下兜底文字（帧异常自愈 / 重建成功）
         if (frameOk) {
           frameOkStreak += 1
-          if (runtimeFailed && frameOkStreak >= 30) runtimeFailed = false
+          if (runtimeFailed && frameOkStreak >= 30) {
+            runtimeFailed = false
+            if (diagLine) diagLine.textContent = ''
+          }
         } else {
           frameOkStreak = 0
         }
@@ -242,6 +252,7 @@
         if (layerEl && layerEl.parentNode) layerEl.parentNode.removeChild(layerEl)
         layerEl = null
         runtimeHost = null
+        diagLine = null
       }
     }
 
