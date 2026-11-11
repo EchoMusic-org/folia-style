@@ -35,6 +35,11 @@
     var destroyed = false
     var building = false
     var buildQueued = false
+    // 「显示副歌词」（样式窗口「字幕」页）开关：控制城寨酒吧场景里 NEXT 全息面板的显隐。
+    // 初值优先取创建方传入的 config，缺省从全局外观设置读。
+    var subtitleEnabled = config && config.subtitleEnabled !== undefined
+      ? config.subtitleEnabled !== false
+      : (window.FoliaTunings ? window.FoliaTunings.getAppearance().subtitle.enabled !== false : true)
     // 失败自愈：宿主切窗口透明材质（DWM）等会触发 WebGL 上下文丢失 → 自动重建，
     // 若重建恰好赶上 GPU 恢复中而失败，没有重试就会永久卡在兜底文字上——补指数退避重试。
     var retryTimer = 0
@@ -107,6 +112,7 @@
           paused: paused,
           staticMode: false,
           showText: showText,
+          subtitleEnabled: subtitleEnabled,
           previewMode: Boolean(definitionPreview),
           transparent: false,
           onContextLost: function () {
@@ -229,6 +235,11 @@
       setTuning: function (tuning) {
         TUNING = Types.normalizeMachiTuning(tuning)
         if (runtime) runtime.setTuning(TUNING)
+      },
+      setSubtitleEnabled: function (enabled) {
+        // 「显示副歌词」开关（样式窗口「字幕」页）：城寨酒吧 NEXT 全息面板的显隐
+        subtitleEnabled = enabled !== false
+        if (runtime) runtime.setSubtitleEnabled(subtitleEnabled)
       },
       destroy: function () {
         destroyed = true

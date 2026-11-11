@@ -74,6 +74,7 @@
     this.paused = options.paused
     this.staticMode = options.staticMode
     this.showText = options.showText
+    this.subtitleEnabled = options.subtitleEnabled !== false
     this.song = options.song
     this.theme = options.theme
     this.tuning = Types.normalizeMachiTuning(options.tuning)
@@ -232,6 +233,17 @@
     this.atmosphere.wind.set(Math.sin(stage.weather.windYaw), Math.cos(stage.weather.windYaw)).multiplyScalar(0.06)
     this.reflection.planeY = stage.reflectionPlaneY
     this.camera.setFraming(stage.framing, this.customView(id))
+    this.applySubtitleVisibility()
+  }
+
+  /** 「显示副歌词」开关（样式窗口「字幕」页）变化或场景重建后：把可见性应用到当前场景（场景自实现，无此项的场景忽略）。 */
+  MachiRuntime.prototype.applySubtitleVisibility = function () {
+    if (this.stage && this.stage.setSubtitleVisible) this.stage.setSubtitleVisible(this.subtitleEnabled)
+  }
+
+  MachiRuntime.prototype.setSubtitleEnabled = function (enabled) {
+    this.subtitleEnabled = enabled !== false
+    this.applySubtitleVisibility()
   }
 
   /** 新场景画上招牌（歌、主题、调色板、字体、图标），颜色同步一次。 */

@@ -1614,6 +1614,12 @@ window.FoliaBridge={
   },
   // 主页面模式暂停（窗口打开时暂停主页面渲染，GPU 让给预览舞台）
   setMainModePaused:function(paused){ mainModePaused=Boolean(paused) },
+  // 「显示副歌词」开关变化（样式窗口「字幕」页）：通知当前模式（町景 NEXT 全息面板显隐）
+  onSubtitleEnabledChange:function(enabled){
+    if(activeMode&&activeMode.setSubtitleEnabled){
+      try{activeMode.setSubtitleEnabled(enabled!==false)}catch(e){}
+    }
+  },
   sendCmd:sendCmd
 };
 

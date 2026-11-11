@@ -1402,6 +1402,11 @@
     this._signs.setContent(content)
   }
 
+  /** 「显示副歌词」开关（样式窗口「字幕」页）：藏/显巷子里的全息投影（下一句面板与它的光束）。 */
+  KowloonScene.prototype.setSubtitleVisible = function (visible) {
+    this._signs.hologram.group.visible = visible !== false
+  }
+
   /** 换歌（seed 不变）：只重画招牌；seed 变了运行时会重建整个场景（rebuildsForSeed）。 */
   KowloonScene.prototype.swapSong = function (_song, content) {
     this.setContent(content)
