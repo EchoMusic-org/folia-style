@@ -10,6 +10,25 @@
 (function () {
   'use strict'
 
+  // 根层透明 class（html/body 让出背景）的引用计数：主页面实例与样式窗口的舞台预览实例
+  // 可能同时挂载，任一实例 destroy 都不得摘掉对方还依赖的 class（否则透明背景失效变黑）
+  var rootRefCount = 0
+
+  function acquireRootTransparent() {
+    rootRefCount += 1
+    document.documentElement.classList.add('folia-bg-transparent')
+    document.body.classList.add('folia-bg-transparent')
+  }
+
+  function releaseRootTransparent() {
+    rootRefCount = Math.max(0, rootRefCount - 1)
+    if (rootRefCount === 0) {
+      // 最后一个实例卸载才还原 iframe 根背景，避免其他背景模式被透明根层影响
+      document.documentElement.classList.remove('folia-bg-transparent')
+      document.body.classList.remove('folia-bg-transparent')
+    }
+  }
+
   function create(config) {
     var host = null
     var scrim = null
@@ -74,8 +93,7 @@
           'transition:background-color 0.5s ease,opacity 0.5s ease;'
         host.appendChild(scrim)
         apply()
-        document.documentElement.classList.add('folia-bg-transparent')
-        document.body.classList.add('folia-bg-transparent')
+        acquireRootTransparent()
       },
       // 宿主窗口背景状态变化（消息实时推送）时更新 scrim
       setWindowBg: function (next) {
@@ -94,9 +112,7 @@
         if (scrim && scrim.parentNode) scrim.parentNode.removeChild(scrim)
         scrim = null
         host = null
-        // 切走时还原 iframe 根背景，避免其他背景模式被透明根层影响
-        document.documentElement.classList.remove('folia-bg-transparent')
-        document.body.classList.remove('folia-bg-transparent')
+        releaseRootTransparent()
       }
     }
   }
