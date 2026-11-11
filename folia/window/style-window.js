@@ -1253,8 +1253,9 @@
       value: subtitle.enabled,
       onChange: function (v) {
         tunings().setAppearance({ subtitle: Object.assign({}, subtitle, { enabled: v }) })
-        // 通知当前模式（町景的 NEXT 全息面板随此开关显隐）
+        // 通知当前模式（町景的 NEXT 全息面板随此开关显隐）：主页面实例与预览舞台实例都要跟上
         bridge().onSubtitleEnabledChange(v)
+        if (stage) stage.setSubtitleEnabled(v)
         renderTab()
       }
     })

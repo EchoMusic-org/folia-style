@@ -237,6 +237,12 @@
           try { instance.setFontScale(scale) } catch (e) { /* 忽略 */ }
         }
       },
+      // 「显示副歌词」开关（町景 NEXT 全息面板显隐）：透传给当前预览实例
+      setSubtitleEnabled: function (enabled) {
+        if (instance && typeof instance.setSubtitleEnabled === 'function') {
+          try { instance.setSubtitleEnabled(enabled !== false) } catch (e) { /* 忽略 */ }
+        }
+      },
       // 预览源切换
       setSource: function (next) {
         if (next === source) return
