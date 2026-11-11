@@ -253,7 +253,8 @@
     var canvases = stage.querySelectorAll('canvas')
     canvases.forEach(function (canvas) {
       var gl = canvas.getContext('webgl2') || canvas.getContext('webgl')
-      if (gl) {
+      // 已丢失的跳过：pixi/three 的 destroy 自己会丢上下文，再 lose 一次只会刷 INVALID_OPERATION 警告
+      if (gl && !gl.isContextLost()) {
         var ext = gl.getExtension('WEBGL_lose_context')
         if (ext) {
           try { ext.loseContext() } catch (e) { /* 忽略 */ }
@@ -394,12 +395,10 @@
         if (status === 'shown') {
           try { node = freezeStage(stage) } catch (e) { node = null }
         }
-        // 销毁实例 + 回收 WebGL 上下文
-        loseContexts(stage)
-        if (instance && instance.destroy) {
-          try { instance.destroy() } catch (e) { /* 忽略 */ }
-        }
+        // 先让实例自己销毁（pixi/three 会正确丢上下文），再对仍存活的 canvas 兜底回收
+        try { if (instance && instance.destroy) instance.destroy() } catch (e) { /* 忽略 */ }
         instance = null
+        loseContexts(stage)
         stage.remove()
         lastMadeAt[task.key] = performance.now()
         finish(task, node, status)
