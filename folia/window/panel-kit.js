@@ -273,6 +273,18 @@
   // get(key) 读当前值；patch(key, value, commit) 写入（draft 或 commit）
   // 返回 { root, refresh }：refresh 重读全部控件值（外部状态变化时同步）
   function renderSchema(schema, api) {
+    // 包装 patch：任何控件写值后立即重算 visibleWhen 联动行的显隐
+    // （雾笺切「窗外→梦海流萤」出水面母滑条、町景切自定义视角出三场景视角等，全部即时联动）
+    // 注意：原 patch 必须先存进独立变量——api 形参将被重赋值，包装闭包里若还写
+    // api.patch 会引用到包装对象自身，变成无限递归爆栈（值写不进、联动也不刷新）
+    var refreshVisible = null
+    var originalPatch = api.patch
+    api = Object.assign({}, api, {
+      patch: function (key, value, commit) {
+        originalPatch(key, value, commit)
+        if (refreshVisible) refreshVisible()
+      }
+    })
     var root = el('div')
     var controls = []   // [{spec, control, rowEl, visibleWhen, invert}]
     var patchApi = {
@@ -328,7 +340,7 @@
       root.appendChild(card)
     })
 
-    function refreshVisible() {
+    function refreshVisibleImpl() {
       var current = api.get()
       controls.forEach(function (item) {
         var vw = item.spec.visibleWhen
@@ -344,8 +356,9 @@
         if (item.control.setValue && v !== undefined) item.control.setValue(v)
       })
     }
-    refreshVisible()
-    return { root: root, refresh: refreshVisible }
+    refreshVisible = refreshVisibleImpl
+    refreshVisibleImpl()
+    return { root: root, refresh: refreshVisibleImpl }
   }
 
   window.FoliaPanelKit = {
