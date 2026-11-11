@@ -46,6 +46,7 @@
     var layerEl = null
     var runtimeHost = null
     var fallback = null
+    var diagLine = null
     var runtime = null
     var runtimeFailed = false
     var destroyed = false
@@ -147,6 +148,7 @@
             if (destroyed) return
             if (rt && rt.holding) {
               runtimeFailed = true
+              if (diagLine) diagLine.textContent = 'H-DIAG init-holding @' + new Date().toISOString().slice(11, 19)
               updateFallback()
               scheduleRetry()
             } else {
@@ -157,6 +159,7 @@
       } catch (e) {
         runtimeFailed = true
         runtime = null
+        if (diagLine) diagLine.textContent = 'H-DIAG create: ' + String((e && e.message) || e).slice(0, 150) + ' @' + new Date().toISOString().slice(11, 19)
         scheduleRetry()
         console.warn('[FoliaModeHanabi] 运行时创建失败', e)
       }
@@ -208,6 +211,10 @@
         fallback = document.createElement('div')
         fallback.style.cssText = 'pointer-events:none;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 10%;text-align:center;color:#f4f4f5;font-size:clamp(2rem,5.4vw,5.6rem);font-weight:700'
         layerEl.appendChild(fallback)
+        // 诊断行（临时）：把最近一次运行时错误直接上屏，抓智能动感链路异常用，定位后撤
+        diagLine = document.createElement('div')
+        diagLine.style.cssText = 'pointer-events:none;position:absolute;left:0;right:0;bottom:26px;text-align:center;color:rgba(255,120,120,0.9);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 12px'
+        layerEl.appendChild(diagLine)
         host.appendChild(layerEl)
         ensureRuntime()
       },
@@ -256,6 +263,7 @@
             runtimeFailed = true
             console.warn('[FoliaModeHanabi] 帧异常', e)
           }
+          if (diagLine) diagLine.textContent = 'H-DIAG frame: ' + String((e && e.message) || e).slice(0, 150) + ' @' + new Date().toISOString().slice(11, 19)
           scheduleRetry()
         }
         // 运行时实际在出画面（init 完成/帧异常自愈）：连续 30 帧正常后撤下兜底文字；
@@ -263,7 +271,10 @@
         if (frameOk) {
           if (!runtime.holding) {
             frameOkStreak += 1
-            if (runtimeFailed && frameOkStreak >= 30) runtimeFailed = false
+            if (runtimeFailed && frameOkStreak >= 30) {
+              runtimeFailed = false
+              if (diagLine) diagLine.textContent = ''
+            }
           } else {
             frameOkStreak = 0
           }
@@ -289,6 +300,7 @@
         layerEl = null
         runtimeHost = null
         fallback = null
+        diagLine = null
         host = null
       }
     }

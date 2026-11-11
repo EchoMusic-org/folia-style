@@ -426,10 +426,10 @@
     return done
   }
 
-  /** 「随拍开花」这一帧的输入；节拍表没装好、效果关着、静态模式时为 null。 */
+  /** 「随拍开花」这一帧的输入；智能动感总开关关着、节拍表没装好、效果关着、静态模式时为 null。 */
   HanabiRuntime.prototype.readBeatSource = function () {
     var FoliaBeatFx = window.FoliaBeatFx
-    if (this.options.staticMode || this.options.tuning.textOnly || !FoliaBeatFx || !FoliaBeatFx.isReady()) return null
+    if (this.options.staticMode || this.options.tuning.textOnly || !FoliaBeatFx || !FoliaBeatFx.isReady() || !FoliaBeatFx.smartBeatActive()) return null
     var strength = FoliaBeatFx.getEffectStrength(EFFECT_BURSTS)
     if (strength <= 0) return null
     this.beatSource.events = FoliaBeatFx.getEvents()
@@ -469,7 +469,7 @@
    */
   HanabiRuntime.prototype.applyBeatPulse = function () {
     var FoliaBeatFx = window.FoliaBeatFx
-    var strength = this.options.staticMode || this.options.tuning.textOnly || !FoliaBeatFx || !FoliaBeatFx.isReady()
+    var strength = this.options.staticMode || this.options.tuning.textOnly || !FoliaBeatFx || !FoliaBeatFx.isReady() || !FoliaBeatFx.smartBeatActive()
       ? 0
       : FoliaBeatFx.getEffectStrength(EFFECT_PULSE)
     this.sceneLayer.pivot.set(this.width / 2, this.height / 2)

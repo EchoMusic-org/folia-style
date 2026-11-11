@@ -230,7 +230,8 @@
   var aquaBeatsOut = { events: [], heard: 0, jelly: 0, weed: 0, bubble: 0, spot: 0 }
   function aquabeats(still) {
     var fx = window.FoliaBeatFx
-    if (still || !fx || !fx.isReady()) return null
+    // 智能动感总开关关着时不出舞潮踏拍（同町景：总开关是效果生效的前提）
+    if (still || !fx || !fx.isReady() || !fx.smartBeatActive()) return null
     // 按听到的时刻走（扣掉输出延迟），和其他跟拍效果一样
     var heard = fx.getHeard().time
     if (heard === null || heard === undefined) return null

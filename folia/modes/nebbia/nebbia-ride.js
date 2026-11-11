@@ -103,8 +103,8 @@
   NebbiaDrizzleRide.prototype.step = function (motion, now, T, frozen, bump, bumps) {
     if (bumps === undefined) bumps = true
     var fx = window.FoliaBeatFx
-    // 效果开着（isReady 且强度 > 0；关着、没数据时强度是 0）
-    var strength = fx && fx.isReady() ? fx.getEffectStrength(DRIZZLE_RIDE) : 0
+    // 效果开着（智能动感总开关开 + isReady 且强度 > 0；关着、没数据时强度是 0）
+    var strength = fx && fx.isReady() && fx.smartBeatActive() ? fx.getEffectStrength(DRIZZLE_RIDE) : 0
     var on = strength > 0
     // 鼓点：效果开着、车这一帧要颠才有；无鼓点数据（空表）按 null 处理，回随机颠
     var drums = null
