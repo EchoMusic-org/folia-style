@@ -19,6 +19,8 @@
   var IMAGE_TRIES = 2
   var IMAGE_CANVAS_WIDTH = 384       // 冻结 canvas 的宽度上限
   var KEPT = 32                      // LRU 缓存上限
+  var STAGE_WIDTH = 960              // 离屏舞台尺寸（16:10，与缩略图卡片同比例）
+  var STAGE_HEIGHT = 600
 
   // ===== poster 帧数据（对齐 sample-stage 的示例歌词与模拟包络） =====
   function posterFrame(sampleSet, theme) {
@@ -72,7 +74,7 @@
     stageHost = document.createElement('div')
     stageHost.id = 'folia-frozen-stage-host'
     // 离屏：不挡交互、不显示，但仍在布局树里（rAF/WebGL 照常渲染）。
-    stageHost.style.cssText = 'position:fixed;left:-100000px;top:0;width:960px;height:600px;' +
+    stageHost.style.cssText = 'position:fixed;left:-100000px;top:0;width:' + STAGE_WIDTH + 'px;height:' + STAGE_HEIGHT + 'px;' +
       'opacity:0;pointer-events:none;overflow:hidden;z-index:-1;contain:strict'
     document.body.appendChild(stageHost)
     return stageHost
@@ -226,6 +228,17 @@
     }
     clone.querySelectorAll('*').forEach(function (node) { node.style.willChange = 'auto' })
     freezeAnimations(stage, clone)
+    // 克隆根按离屏舞台的原始尺寸摆放（清掉取自舞台的 inset:0），插入缩略图卡片后
+    // 由使用方按卡片实际宽 transform:scale 整体缩小——内部子元素仍活在 960×600 坐标系里。
+    // transform 同时会把克隆内 position:fixed 后代的包含块收归克隆根本身，
+    // 配合 overflow:hidden，快照里的悬浮元素不会再铺到卡片外。
+    clone.style.inset = 'auto'
+    clone.style.left = '0'
+    clone.style.top = '0'
+    clone.style.width = STAGE_WIDTH + 'px'
+    clone.style.height = STAGE_HEIGHT + 'px'
+    clone.style.transformOrigin = 'top left'
+    clone.style.transform = 'scale(0.001)' // 占位：未适配前缩到不可见，防止撑爆卡片布局
     return clone
   }
 
@@ -411,6 +424,8 @@
     request: request,
     invalidate: invalidate,
     disposeStageHost: disposeStageHost,
+    STAGE_WIDTH: STAGE_WIDTH, // 缩放基准：卡片宽 / STAGE_WIDTH = 缩略图 scale
+    STAGE_HEIGHT: STAGE_HEIGHT,
     /** 供样式窗口查询缓存命中（同步路径优先用缓存）。 */
     peek: function (modeId, theme, sampleId) {
       return cacheGet(cacheKey(modeId, theme, sampleId))

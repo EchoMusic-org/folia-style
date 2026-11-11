@@ -411,6 +411,37 @@
     return 'rgb(' + out.join(',') + ')'
   }
 
+  // ===== 冻结快照缩略图适配：克隆保持离屏舞台原始尺寸（960×600），按卡片实际宽整体缩放 =====
+  var FROZEN_STAGE_W = (window.FoliaFrozenPicture && window.FoliaFrozenPicture.STAGE_WIDTH) || 960
+  var frozenThumbMap = new Map()   // 卡片 → 已挂载的冻结节点（卡片尺寸变化时更新 scale）
+  var frozenThumbObserver = null
+  function ensureFrozenObserver() {
+    if (frozenThumbObserver || typeof ResizeObserver !== 'function') return frozenThumbObserver
+    frozenThumbObserver = new ResizeObserver(function (entries) {
+      entries.forEach(function (entry) {
+        var node = frozenThumbMap.get(entry.target)
+        if (node) fitFrozenThumb(node, entry.target)
+      })
+    })
+    return frozenThumbObserver
+  }
+  function fitFrozenThumb(node, card) {
+    var w = card.clientWidth
+    if (w > 0) node.style.transform = 'scale(' + (w / FROZEN_STAGE_W) + ')'
+  }
+  /** 隐藏简笔 canvas、插入冻结快照并按当前卡片宽缩放（窗口/列数变化由 ResizeObserver 跟随）。 */
+  function mountFrozenThumb(node, card, canvas, label) {
+    canvas.style.display = 'none'
+    node.classList.add('fsw-frozen-thumb')
+    card.insertBefore(node, label)
+    fitFrozenThumb(node, card)
+    var obs = ensureFrozenObserver()
+    if (obs) {
+      frozenThumbMap.set(card, node)
+      obs.observe(card)
+    }
+  }
+
   function renderShelf() {
     var refs = root._refs
     var st = getState()
@@ -422,6 +453,11 @@
     var modes = window.FoliaRegistry.getModeOptions()
     refs.shelfCount.textContent = '(' + (modes.length + 1) + ')'
     refs.shelf.innerHTML = ''
+    // 卡片整批重建：解除上一批的尺寸观察，避免观察已移除的旧卡片
+    if (frozenThumbObserver) {
+      frozenThumbObserver.disconnect()
+      frozenThumbMap.clear()
+    }
     modes.forEach(function (mode) {
       var card = document.createElement('button')
       card.className = 'fsw-shelf-card'
@@ -445,20 +481,13 @@
         ? window.FoliaFrozenPicture.peek(mode.id, st.theme, 'default')
         : null
       if (frozen) {
-        canvas.style.display = 'none'
-        var frozenClone = frozen.cloneNode(true)
-        frozenClone.classList.add('fsw-frozen-thumb')
-        card.insertBefore(frozenClone, label)
+        mountFrozenThumb(frozen.cloneNode(true), card, canvas, label)
       } else if (thumbCache[key]) {
         drawThumbFromCache(canvas, thumbCache[key])
         // 排队做真实快照（串行做图，好了换上）
         if (window.FoliaFrozenPicture) {
           window.FoliaFrozenPicture.request(mode.id, st.theme, 'default', function (node) {
-            if (node && card.isConnected) {
-              canvas.style.display = 'none'
-              node.classList.add('fsw-frozen-thumb')
-              card.insertBefore(node, label)
-            }
+            if (node && card.isConnected) mountFrozenThumb(node, card, canvas, label)
           })
         }
       } else {
@@ -466,11 +495,7 @@
         thumbCache[key] = canvas.toDataURL()
         if (window.FoliaFrozenPicture) {
           window.FoliaFrozenPicture.request(mode.id, st.theme, 'default', function (node) {
-            if (node && card.isConnected) {
-              canvas.style.display = 'none'
-              node.classList.add('fsw-frozen-thumb')
-              card.insertBefore(node, label)
-            }
+            if (node && card.isConnected) mountFrozenThumb(node, card, canvas, label)
           })
         }
       }

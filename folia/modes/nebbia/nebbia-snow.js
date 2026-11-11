@@ -136,7 +136,7 @@
   /** 雪的直径占贴图边长的比例：画的时候按它缩放到雪花半径。 */
   var FLAKE_FILL = 0.84
 
-  // FlakeKind：{ type: 'clump'|'star'|'bead', row, stages: ImageData[], lumps: [{ x, y, w }] }
+  // FlakeKind：{ type（'clump'|'star'|'bead'）, row, stages（ImageData 数组）, lumps: [{ x, y, w }] }
   // Disc：{ x, y, r, a }；Arm：{ ang, len, w, branches: [{ at, len, ang, side }] }
   var TAU = Math.PI * 2
   var smoothstep = function (a, b, v) { var t = Math.max(0, Math.min(1, (v - a) / (b - a))); return t * t * (3 - 2 * t) }
@@ -495,7 +495,7 @@
   // 雪窗上走动的水珠在雾上擦出的一道（nebbiaSnowWater.ts 用）：只擦掉一半，宽是水珠直径的六成（全擦开的话后面清楚的街景透出来，
   // 一道道像黑条）；停下后过 hold 的一半、用 refog 的六成回雾（库里水痕上的雾也回得快），完全回雾的丢掉。
 
-  // FogWipe：{ pts: number[], w, end }
+  // FogWipe：{ pts（走过的点，x、y 交错）, w, end }
   /** 走过多远才记一个点；擦掉多少（1 = 全擦开）。 */
   var MOVE_MIN = 3
   var WIPE_CLEAR = 0.5

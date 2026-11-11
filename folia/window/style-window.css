@@ -114,6 +114,7 @@
 .fsw-shelf-card{
   position:relative;border:none;padding:0;cursor:pointer;
   border-radius:12px;overflow:hidden;
+  aspect-ratio:16/10; /* 卡片恒定比例：canvas 换成冻结快照（display:none）后行高不再塌陷 */
   background:#18181b;
   box-shadow:0 0 0 1px rgba(255,255,255,0.08);
   transition:box-shadow 0.15s ease,transform 0.15s ease;
@@ -349,11 +350,12 @@
 .fsw-import-box:focus{border-color:var(--fsw-accent,#00f5d4)}
 .fsw-import-box.invalid{border-color:#e5484d}
 
-/* 活实例冻结快照缩略图（fsw-frozen-thumb：绝对定位铺满卡片，内部按舞台比例缩放） */
+/* 活实例冻结快照缩略图：克隆根保持离屏舞台原始尺寸（960×600），
+   由 JS 按卡片实际宽 transform:scale 整体缩小（resize 跟随），此层只负责裁剪与圆角 */
 .fsw-frozen-thumb{
-  position:absolute;inset:0;overflow:hidden;border-radius:inherit;
+  position:absolute;left:0;top:0;right:0;bottom:0;overflow:hidden;border-radius:inherit;
+  pointer-events:none;
 }
-.fsw-frozen-thumb > *{position:absolute !important;transform-origin:center center}
 
 /* 多选开关组 */
 .fsw-multi{display:flex;flex-wrap:wrap;gap:6px;flex:1;min-width:0}
