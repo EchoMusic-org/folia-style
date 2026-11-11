@@ -443,7 +443,7 @@ body.folia-mac-platform .close-overlay-btn{left:80px}
 .sm-action-btn{
   width:32px;height:32px;border-radius:8px;
   background:transparent;border:none;
-  color:var(--st-raise);cursor:pointer;
+  color:var(--st-t2);cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   transition:all 0.2s ease;
 }
@@ -502,7 +502,7 @@ body.folia-mac-platform .close-overlay-btn{left:80px}
 .sm-big-btns{display:flex;gap:10px}
 .sm-big-btn{
   flex:1;height:52px;border-radius:14px;border:none;
-  background:var(--st-fill);color:var(--st-raise);
+  background:var(--st-fill);color:var(--st-t2);
   cursor:pointer;display:flex;align-items:center;justify-content:center;
   transition:all 0.2s ease;
 }
