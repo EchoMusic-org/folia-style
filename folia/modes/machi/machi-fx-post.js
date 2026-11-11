@@ -596,8 +596,10 @@
     'uniform float uDofMix;\nuniform vec2 uBlend;\nuniform float uAberration;\nuniform float uVignette;\nuniform float uGrain;\n' +
     'uniform float uFade;\nuniform float uStars;\nuniform float uTime;\nuniform float uAspect;\nvarying vec2 vUv;\n' +
     COC_GLSL + GLOW_GLSL +
+    // tonemapping_pars 必须手动 include（本材质 toneMapped:false，three 前缀不注入它）；
+    // colorspace_pars 不能再 include——renderer 上屏 sRGB 时 three 前缀已注入过，
+    // 重复定义 LinearTransferOETF/sRGBTransferEOTF/sRGBTransferOETF 会直接编译失败（黑屏根因）。
     '#include <tonemapping_pars_fragment>\n' +
-    '#include <colorspace_pars_fragment>\n' +
     'float gHash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }\n' +
     'void main() {\n' +
     '    vec2 centered = vUv - 0.5;\n' +

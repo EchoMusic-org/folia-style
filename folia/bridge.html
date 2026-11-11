@@ -747,6 +747,25 @@ function sendCmd(cmd,extra){
 }
 
 // ===== 消息处理 =====
+// 临时诊断:拦截前三条 console.error(three 着色器/GL 错误)上屏到模式区顶部,定位町景黑屏用,定位后撤
+(function(){
+  var orig=console.error,count=0;
+  console.error=function(){
+    if(count<3){
+      count++;
+      var msg=Array.prototype.map.call(arguments,function(a){return typeof a==='string'?a:(a&&a.message)||String(a)}).join(' ').replace(/\s+/g,' ');
+      var host=document.getElementById('folia-mode-host');
+      if(host){
+        var d=document.getElementById('folia-gl-diag')||document.createElement('div');
+        d.id='folia-gl-diag';
+        d.style.cssText='position:absolute;left:0;right:0;top:8px;z-index:99;text-align:center;color:rgba(255,200,120,0.95);font-size:11px;pointer-events:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 12px';
+        d.textContent='GL-DIAG '+count+': '+msg.slice(0,180);
+        host.appendChild(d);
+      }
+    }
+    return orig.apply(console,arguments);
+  };
+})();
 var hostPlatform='';
 var hostCanMiniPlayer=false;
 var hostShowFullscreen=true;
