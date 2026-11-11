@@ -337,6 +337,33 @@
   var STORAGE_MODE_KEY = 'folia-smartBeat'
   var STORAGE_EFFECTS_KEY = 'folia-beatEffects'
 
+  // 设置读缓存：smartBeatActive/getEffectStrength 在每帧热路径被模式多次调用
+  // （町景 3 次、花火 2~4 次），localStorage 同步读 + JSON.parse 不该进 rAF；
+  // 这两个键只有本模块经 setMode/setEffectSettings 写，写时同步刷缓存即可保一致。
+  var modeCache = null        // null = 未初始化；'on' | 'off'
+  var effectsCache = null     // null = 未初始化；解析后的效果设置对象
+
+  function readMode() {
+    if (modeCache === null) {
+      try {
+        var value = localStorage.getItem(STORAGE_MODE_KEY)
+        modeCache = value === 'on' ? 'on' : 'off'
+      } catch (e) { modeCache = 'off' }
+    }
+    return modeCache
+  }
+
+  function readEffects() {
+    if (effectsCache === null) {
+      try {
+        var raw = localStorage.getItem(STORAGE_EFFECTS_KEY)
+        var parsed = raw ? JSON.parse(raw) : {}
+        effectsCache = parsed && typeof parsed === 'object' ? parsed : {}
+      } catch (e) { effectsCache = {} }
+    }
+    return effectsCache
+  }
+
   /** 内置效果清单（与上游 BEAT_EFFECT_IDS 对齐；nebbia 的两条在雾笺接入后生效）。 */
   var BEAT_EFFECT_DEFS = [
     { id: 'machi.neonPulse', label: '霓虹随拍', mode: 'machi', source: 'beats' },
@@ -347,21 +374,6 @@
     { id: 'nebbia.drizzleRide', label: '疏雨轻车', mode: 'nebbia', source: 'drums' },
     { id: 'nebbia.aquaBeat', label: '舞潮踏拍', mode: 'nebbia', source: 'beats' }
   ]
-
-  function readMode() {
-    try {
-      var value = localStorage.getItem(STORAGE_MODE_KEY)
-      return value === 'on' ? 'on' : 'off'
-    } catch (e) { return 'off' }
-  }
-
-  function readEffects() {
-    try {
-      var raw = localStorage.getItem(STORAGE_EFFECTS_KEY)
-      var parsed = raw ? JSON.parse(raw) : {}
-      return parsed && typeof parsed === 'object' ? parsed : {}
-    } catch (e) { return {} }
-  }
 
   var shared = {
     _clock: createBeatFxClockState([], 1),
@@ -452,7 +464,9 @@
     // —— 智能动感设置 ——
     getMode: readMode,
     setMode: function (mode) {
-      try { localStorage.setItem(STORAGE_MODE_KEY, mode === 'on' ? 'on' : 'off') } catch (e) { /* 忽略 */ }
+      var next = mode === 'on' ? 'on' : 'off'
+      modeCache = next
+      try { localStorage.setItem(STORAGE_MODE_KEY, next) } catch (e) { /* 忽略 */ }
     },
     smartBeatActive: function () { return readMode() === 'on' },
     getEffectSettings: function (id) {

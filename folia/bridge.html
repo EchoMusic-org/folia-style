@@ -1467,9 +1467,16 @@ function tick(now){
       try{activeMode.tick(frameState)}catch(e){console.error('[Folia] 模式 tick 异常',e)}
     }
   }
-  // 背景帧驱动（不依赖歌词，暂停时由背景自行冻结；样式窗口打开时暂停主页面背景，GPU 让给预览）
+  // 背景帧驱动（不依赖歌词，暂停时由背景自行冻结；样式窗口打开时暂停主页面背景，GPU 让给预览）。
+  // 与模式 frameState 同款模块级单对象反复覆写（背景每帧现读属性、不跨帧快照引用），省每帧字面量分配
+  var sharedBgFrame={audioPower:0,audioBands:sharedAudioBands,isPlaying:false,dt:0,coverUrl:null};
   if(!mainModePaused&&activeBg&&activeBg.tick){
-    try{activeBg.tick({audioPower:S.rms,audioBands:buildAudioBands(),isPlaying:S.isPlaying,dt:dt,coverUrl:S.coverUrl})}catch(e){}
+    sharedBgFrame.audioPower=S.rms;
+    sharedBgFrame.audioBands=buildAudioBands();
+    sharedBgFrame.isPlaying=S.isPlaying;
+    sharedBgFrame.dt=dt;
+    sharedBgFrame.coverUrl=S.coverUrl;
+    try{activeBg.tick(sharedBgFrame)}catch(e){}
   }
   scheduleNextFrame();
 }
