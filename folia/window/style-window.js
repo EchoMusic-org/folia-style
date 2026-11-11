@@ -1404,7 +1404,9 @@
       var dark = '#17171a'
       onAccent = math.getContrastRatio(dark, accent) >= math.getContrastRatio('#ffffff', accent) ? dark : '#ffffff'
     }
-    var set = root.style
+    // 变量必须设在窗口元素自身：.fsw-win 规则里带着深色默认值，CSS 变量解析时
+    // 元素自身的定义优先于从祖先继承，设在 .fsw-root 上会被默认值永远压住
+    var set = root._refs.win.style
     set.setProperty('--text-primary', daylight ? '#18181b' : '#f4f4f5')
     set.setProperty('--st-win', daylight ? '#f3f3f4' : '#1a1a1d')
     set.setProperty('--st-side', daylight ? '#e9e9eb' : '#141416')
