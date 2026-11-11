@@ -4,18 +4,20 @@
 // CSS 动画把当前值写死成内联样式），随即销毁实例；卡片平时显示冻结图，无脚本、无循环、无 WebGL 上下文。
 // 关键约束（上游实测数据）：全页串行做图（一次一张）、单运行位、LRU 缓存、卸载时对 WebGL canvas
 // 调 WEBGL_lose_context.loseContext()（否则撞 16 个上下文上限会把播放页的挤掉）。
-// 帧数据：内置示例歌词的 poster 帧（第 2 行唱到 60% 处——"每个样式都有字在画面上"）+ 模拟音频包络。
+// 帧数据：只用内置示例文本的 poster 帧（固定第 2 行唱到 60% 处的一句，永不使用真实歌词）+ 模拟音频包络；
+// 先从 poster 前 1.5s 快进预热（行进场动画播完），再最短渲染 2s 让场景充分加载，之后才判定静止并冻结。
 (function () {
   'use strict'
 
-  // ===== 时序常量（上游 pictureRule.ts） =====
+  // ===== 时序常量（上游 pictureRule.ts + 本地化调整） =====
   var FIRST_IMAGE_REST_MS = 450      // 窗口展开动画后再开始
   var NEW_IMAGE_REST_MS = 1200       // 设置变动后的静默期
-  var SETTLE_MIN_MS = 350            // 等歌词词到达
-  var SETTLE_MAX_MS = 1000           // 兜底
+  var SCENE_READY_MS = 2000          // 场景充分加载：最短渲染 2 秒后才判定冻结（等场景资源/着色器/进场动画）
+  var SETTLE_MAX_MS = 1000           // 静止判定兜底（在 SCENE_READY_MS 之后起算）
   var QUIET_MS = 160                 // 判定"静止"的安静窗口
   var EMPTY_CANVAS_MS = 1000         // 偶尔绘制的 canvas 多等一会
   var GIVE_UP_MS = 4000
+  var WARMUP_SECONDS = 1.5           // 冻结前快进预热：行进场/过渡动画在这段播完再停稳
   var IMAGE_TRIES = 2
   var IMAGE_CANVAS_WIDTH = 384       // 冻结 canvas 的宽度上限
   var KEPT = 32                      // LRU 缓存上限
@@ -23,12 +25,14 @@
   var STAGE_HEIGHT = 600
 
   // ===== poster 帧数据（对齐 sample-stage 的示例歌词与模拟包络） =====
+  // 快照只用内置示例文本、固定第 2 行唱到 60% 处的一句——永不使用真实歌词，
+  // 保证同一样式每次生成的快照画面一致（避免真实歌词的动态内容造成快照不稳定）。
   function posterFrame(sampleSet, theme) {
     var set = window.FoliaSampleStage && window.FoliaSampleStage.SAMPLE_SETS
       ? window.FoliaSampleStage.SAMPLE_SETS[sampleSet || 'default']
       : null
     if (!set) return null
-    // poster 时间：第 2 行开始 + 行长 × 0.6
+    // poster 时间：第 2 行开始 + 行长 × 0.6（固定一句，行索引不再变化）
     var line = set.lines[1]
     var poster = (line.time_ms + line.duration_ms * 0.6) / 1000
     var raw = set.lines.map(function (l) {
@@ -149,7 +153,9 @@
       var now = performance.now()
       var elapsed = now - startAt
       var has = stageHasContent(stage)
-      if (has && !settled && elapsed > SETTLE_MIN_MS && !hasRunningFiniteAnimations(stage)) {
+      // 场景充分加载：至少渲染 SCENE_READY_MS 后才进入静止判定（等 three/pixi 场景
+      // 资源、着色器编译与行进场动画就绪），超时兜底同样让路到加载期之后
+      if (has && !settled && elapsed > SCENE_READY_MS && !hasRunningFiniteAnimations(stage)) {
         if (quietSince < 0) quietSince = now
         if (now - quietSince >= QUIET_MS) {
           settled = true
@@ -159,7 +165,7 @@
       } else {
         quietSince = -1
       }
-      var giveUpAt = has ? Math.max(SETTLE_MAX_MS, EMPTY_CANVAS_MS) : GIVE_UP_MS
+      var giveUpAt = Math.max(has ? Math.max(SETTLE_MAX_MS, EMPTY_CANVAS_MS) : GIVE_UP_MS, SCENE_READY_MS + 500)
       if (elapsed > giveUpAt) {
         done(has ? 'shown' : 'empty')
         return
@@ -365,14 +371,17 @@
         return
       }
       instance = preview.instance
-      // poster 帧持续喂（有些样式只在收到时间变化时绘制；每帧 ±0.0001s 抖动触发重画）
+      // 预热快进：从 poster 前 WARMUP_SECONDS 处匀速推进到 poster 再停稳——
+      // 行切换/进场动画在这段播完，冻结时画面停在固定一句的稳态上
+      var warmupFrom = Math.max(0, frame.currentTime - WARMUP_SECONDS)
       var elapsed = 0
       function step() {
         if (disposed || !instance) return
         elapsed += 1 / 60
-        var local = frame
-        var jitter = (elapsed % 2) * 0.0001
-        var frameState = Object.assign({}, local, { currentTime: local.currentTime + jitter, dt: 1 / 60 })
+        var time = Math.min(warmupFrom + elapsed, frame.currentTime)
+        // 停稳后只加 ±0.0001s 抖动触发"只在时间变化时重画"的样式，不足以切换行
+        var jitter = time >= frame.currentTime ? (elapsed % 2) * 0.0001 : 0
+        var frameState = Object.assign({}, frame, { currentTime: time + jitter, dt: 1 / 60 })
         try { instance.tick(frameState) } catch (e) { /* 帧异常不阻塞 */ }
         rafId = requestAnimationFrame(step)
       }
