@@ -940,7 +940,8 @@ window.addEventListener('message',function(ev){
       break;
     case'echo-folia:spectrum':
       S.rms=d.payload.rms||0;S.peak=d.payload.peak||0;
-      // 从 bins 估算频段（值域 0~200：均值/255*200，主循环中归一到 0~1 供模式/背景使用）
+      // 从 bins 估算频段。宿主频谱 bins 已归一化到 0~1（audioSpectrum.ts toNormalizedBin），
+      // 这里按三等分取均值 ×200 映射到 0~200 值域（主循环 normBand /200 归一，模式按需 ×255 还原原版）
       var bins=d.payload.bins||[];
       if(bins.length){
         var bLen=Math.floor(bins.length/3);
@@ -948,9 +949,9 @@ window.addEventListener('message',function(ev){
         for(var i=0;i<bLen;i++)bassSum+=bins[i];
         for(var i=bLen;i<bLen*2;i++)midSum+=bins[i];
         for(var i=bLen*2;i<bins.length;i++)trebSum+=bins[i];
-        S.bass=bassSum/bLen/255*200;
-        S.mid=midSum/bLen/255*200;
-        S.treble=trebSum/(bins.length-bLen*2)/255*200;
+        S.bass=bassSum/bLen*200;
+        S.mid=midSum/bLen*200;
+        S.treble=trebSum/(bins.length-bLen*2)*200;
       }
       // 智能动感：频谱帧喂给共享节拍检测（实时节拍表 + 底鼓/军鼓），效果强度在样式窗口「全局」tab 配置
       if(window.FoliaBeatFx){
