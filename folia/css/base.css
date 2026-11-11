@@ -658,7 +658,8 @@ body.folia-mac-platform .close-overlay-btn{left:80px}
 .settings-btn{
   position:fixed;bottom:38px;right:18px;z-index:20;
   width:48px;height:48px;border-radius:50%;
-  background:var(--st-t1);border:none;
+  /* 始终白底黑图标（浮在画面上的浮层钮，不随窗口深浅） */
+  background:rgba(255,255,255,0.92);border:none;
   color:#000;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   transition:all 0.2s ease;
