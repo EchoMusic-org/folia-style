@@ -186,3 +186,9 @@ iframe → 宿主（`bridge.html` 内 `parent.postMessage`）：
 - Git 由用户手动管理；不要自动 `git add / commit / push`。
 - 使用 Node 时默认 ESM、无分号、Windows 环境；本插件的宿主入口 `index.js` 已经是 ESM（`export function activate`）。iframe 内脚本走 IIFE，是浏览器脚本环境。注释一律中文。
 - 语法自查：`node --check <file>`（对每个 JS 文件）；bridge.html 的内联脚本可提取后 `new Function()` 验证。
+
+## 发布流程（GitHub CI）
+
+- `.github/workflows/release.yml`：推 `v*` tag 自动触发（ubuntu + Node 22）——版本对齐（tag `vA.B.C` 自动写进 zip 内的 manifest.json，仓库 HEAD 不变）→ 全量 JS 语法检查 → 生成雾笺笔顺数据 → `zip -r folia-style-<版本>.zip manifest.json index.js style.css folia`（zip 根即插件根，解压放进主程序 plugins/ 即用）→ 更新日志自动取自上一个 tag（没有则全部）以来的 commit 标题逐条汇总 → `softprops/action-gh-release@v2` 发布。
+- 雾笺笔顺数据 `folia/assets/nebbia-strokes.json`（约 4.3MB，11048 字）是**构建期产物、不进仓库**：`dev/build-nebbia-strokes.mjs` 每次构建从钉死的 AnimCJK commit（`99dba566`）下载 graphics 文本（sha256 校验）抽笔画中线生成；数据是 **Arphic Public License**，许可文本静态随附在 `folia/assets/licenses/nebbia-strokes/`（NOTICE/COPYING/APL，改数据生成方式时同步改 NOTICE 的声明）。网络受限：CI 直连官方 raw；本地可用 `NODE_USE_ENV_PROXY=1 HTTPS_PROXY=http://127.0.0.1:3770` 跑，或 `ANIMCJK_RAW_BASE` 换镜像基址；`FOLIA_NEBBIA_STROKES=off` 跳过生成（雾笺退回骨架追踪）。
+- 发布即打 tag：`git tag v1.4.1 && git push origin v1.4.1`（manifest.json 的 version 建议同步改，仅是提示作用，zip 内以 tag 为准）。
