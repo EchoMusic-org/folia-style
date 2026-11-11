@@ -266,6 +266,8 @@
   }
 
   HanabiRuntime.prototype.drawOverlay = function () {
+    // init 未完成（层还没建）时不画：install 里的 resizeToHost(true) 会补上第一帧的画框。
+    if (this.destroyed || !this.overlayLayer) return
     Bloom.destroyPixiContainerChildren(this.overlayLayer)
     var tuning = this.options.tuning
     if (!tuning.overlayFrame || tuning.textOnly || this.width === 0) return
@@ -551,7 +553,8 @@
     } else {
       this.clearScenes()
     }
-    this.credits.invalidate()
+    // init 未完成时片尾卡层还不存在（install 后的首帧会按当前状态建）。
+    if (this.credits) this.credits.invalidate()
     if (themeChanged) this.drawOverlay()
   }
 
@@ -566,7 +569,7 @@
     if (this.songSwap.active) this.songSwap.settle(true)
     this.options.song = { seed: this.options.song.seed, program: this.options.song.program, theme: theme }
     this.clearScenes()
-    this.credits.invalidate()
+    if (this.credits) this.credits.invalidate()
     if (themeChanged) this.drawOverlay()
   }
 
@@ -612,7 +615,7 @@
     var nextArtist = metadata.artist ? metadata.artist.trim() : null
     var titleChanged = currentTitle !== nextTitle || currentArtist !== nextArtist
     this.options.metadata = { title: metadata.title, artist: metadata.artist, album: metadata.album }
-    this.credits.invalidate()
+    if (this.credits) this.credits.invalidate()
     // 曲名、艺人烘焙进了拼贴的开场标题卡与重复字：换了就重建场景（防抖，同一首歌里一般只在开头晚到一次）。
     if (titleChanged) this.scheduleRebuild()
   }
