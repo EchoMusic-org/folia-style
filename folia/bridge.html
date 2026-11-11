@@ -371,8 +371,25 @@ function resolveActiveTheme(){
 }
 
 // 主题来源/深浅色变化后：重解析并广播（模式/背景/样式窗口同步）
+// 桥接 UI chrome（设置菜单/队列面板/全页底色）的深浅色 token：表面色两套按 daylight 切（照上游 settings kit）
+function applyChromeTokens(){
+  var dual=window.FoliaDualTheme?window.FoliaDualTheme.getState():null;
+  var daylightUi=Boolean(dual&&dual.daylight);
+  var rootStyle=document.documentElement.style;
+  rootStyle.setProperty('--text-primary',daylightUi?'#18181b':'#f4f4f5');
+  rootStyle.setProperty('--st-win',daylightUi?'#f3f3f4':'#1a1a1d');
+  rootStyle.setProperty('--st-side',daylightUi?'#e9e9eb':'#141416');
+  rootStyle.setProperty('--st-card',daylightUi?'#ffffff':'#232327');
+  rootStyle.setProperty('--st-raise',daylightUi?'#ffffff':'#45454c');
+  rootStyle.setProperty('--st-knob',daylightUi?'#ffffff':'#ececee');
+  rootStyle.setProperty('--st-win-glass',daylightUi?'rgba(250,250,252,0.72)':'rgba(26,26,29,0.72)');
+  rootStyle.setProperty('--st-page',daylightUi?'#ececef':'#09090b');
+  rootStyle.setProperty('--st-err',daylightUi?'#d04444':'#ef6f6f');
+  rootStyle.setProperty('--fsw-accent',currentTheme.accentColor||(daylightUi?'#18181b':'#f4f4f5'));
+}
 function refreshTheme(){
   currentTheme=applyIntensity(resolveActiveTheme());
+  applyChromeTokens();
   broadcastTheme();
   if(window.FoliaStyleWindow&&window.FoliaStyleWindow.onThemeSourceChange){
     window.FoliaStyleWindow.onThemeSourceChange();
@@ -1628,6 +1645,7 @@ window.FoliaBridge={
 currentAnimMode=window.FoliaRegistry.resolveId(localStorage.getItem('folia-animMode')||'classic');
 // 初始化主题（默认/AI主题/自定义三态解析 + 当前强度；默认模式下切歌后由封面取色异步更新）
 currentTheme=applyIntensity(resolveActiveTheme());
+applyChromeTokens();
 // 恢复外观设置（字重 CSS 变量 + 模式层整体透明度）
 applyLyricFontWeight();
 (function(){
