@@ -300,10 +300,65 @@
   .fsw-col-body{overflow:visible}
 }
 
+/* ===== 主题（默认/AI主题/自定义 + 快速编辑对话框） ===== */
+.fsw-theme-actions{display:flex;gap:6px;flex:1;min-width:0;flex-wrap:wrap;justify-content:flex-end}
+.fsw-modal-overlay{
+  position:absolute;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+.fsw-modal{
+  width:min(760px,92%);max-height:88%;display:flex;flex-direction:column;
+  background:#17181c;border:1px solid rgba(255,255,255,0.08);border-radius:16px;
+  box-shadow:0 24px 64px rgba(0,0,0,0.5);overflow:hidden;
+}
+.fsw-modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px}
+.fsw-modal-title{font-size:15px;font-weight:600;color:#fff}
+.fsw-modal-foot{display:flex;align-items:center;gap:8px;padding:12px 18px 16px;border-top:1px solid rgba(255,255,255,0.06)}
+.fsw-modal-spacer{flex:1}
+.fsw-btn{
+  height:32px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,0.1);
+  background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.8);font-size:12px;cursor:pointer;
+  transition:all 0.15s ease;
+}
+.fsw-btn:hover{background:rgba(255,255,255,0.12);color:#fff}
+.fsw-btn.primary{background:var(--fsw-accent,#00f5d4);border-color:transparent;color:#04110e;font-weight:600}
+.fsw-btn.primary:hover{filter:brightness(1.1);color:#04110e}
+.fsw-theme-body{display:grid;grid-template-columns:1fr 1.1fr;gap:14px;padding:6px 18px 14px;overflow:auto}
+@media (max-width:767px){.fsw-theme-body{grid-template-columns:1fr}}
+.fsw-theme-left,.fsw-theme-right{display:flex;flex-direction:column;gap:10px;min-width:0}
+.fsw-theme-wells{display:flex;flex-direction:column;gap:8px}
+.fsw-theme-well{
+  display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:12px;
+  background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.06);
+}
+.fsw-theme-well.accent{box-shadow:0 0 0 1.5px var(--fsw-accent,#00f5d4)}
+.fsw-theme-well input[type=color]{
+  width:34px;height:34px;padding:0;border:none;border-radius:9px;cursor:pointer;background:none;
+}
+.fsw-theme-well-label{display:flex;flex-direction:column;gap:2px;min-width:0}
+.fsw-theme-well-name{font-size:12.5px;color:rgba(255,255,255,0.85)}
+.fsw-theme-hex{font-size:11px;color:rgba(255,255,255,0.4);font-family:ui-monospace,monospace}
+.fsw-swatch-grid{display:flex;flex-wrap:wrap;gap:7px}
+.fsw-swatch{width:24px;height:24px;border-radius:50%;border:1px solid rgba(255,255,255,0.14);cursor:pointer;padding:0}
+.fsw-swatch:hover{transform:scale(1.15)}
+.fsw-import-box{
+  width:100%;min-height:64px;resize:vertical;border-radius:10px;padding:8px 10px;
+  background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.8);
+  font-size:11px;font-family:ui-monospace,monospace;outline:none;
+}
+.fsw-import-box:focus{border-color:var(--fsw-accent,#00f5d4)}
+.fsw-import-box.invalid{border-color:#e5484d}
+
 /* 活实例冻结快照缩略图（fsw-frozen-thumb：绝对定位铺满卡片，内部按舞台比例缩放） */
 .fsw-frozen-thumb{
   position:absolute;inset:0;overflow:hidden;border-radius:inherit;
 }
 .fsw-frozen-thumb > *{position:absolute !important;transform-origin:center center}
 
-
+/* 多选开关组 */
+.fsw-multi{display:flex;flex-wrap:wrap;gap:6px;flex:1;min-width:0}
+.fsw-multi-item{
+  height:28px;padding:0 10px;border-radius:9px;border:none;cursor:pointer;font-size:11.5px;
+  background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.6);transition:all 0.15s ease;
+}
+.fsw-multi-item.checked{background:rgba(0,245,212,0.14);color:#fff;box-shadow:0 0 0 1px var(--fsw-accent,#00f5d4)}

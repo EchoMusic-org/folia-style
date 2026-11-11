@@ -173,6 +173,7 @@
 <script src="runtime/seed-hash.js"></script>
 <script src="runtime/theme-color-math.js"></script>
 <script src="runtime/beatfx.js"></script>
+<script src="runtime/dual-theme.js"></script>
 <script src="runtime/subtitle-overlay.js"></script>
 <script src="runtime/registry.js"></script>
 <script src="backgrounds/paper-mount.js"></script>
@@ -235,7 +236,7 @@ var S={
 // ===== 新歌词体系全局状态 =====
 var currentAnimMode='classic';      // 当前动画模式 id（启动时经 FoliaRegistry.resolveId 恢复，兼容旧 id）
 var currentIntensity='normal';      // 动画强度 calm/normal/chaotic
-var currentTheme=Object.assign({},window.FoliaTheme.DEFAULT_THEME,{animationIntensity:currentIntensity}); // 当前主题（切歌后由封面取色异步更新）
+var currentTheme=Object.assign({},window.FoliaTheme.DEFAULT_THEME,{animationIntensity:currentIntensity}); // 当前主题（初始值；启动段经 resolveActiveTheme 重解析，默认模式下切歌由封面取色更新）
 var backgroundMode=localStorage.getItem('folia-backgroundMode')||'common'; // 当前背景模式
 var randomModePerSong=localStorage.getItem('folia-randomModePerSong')==='true'; // 每首歌随机动画
 var lastSongKeyForTheme=null;       // 主题取色去重（songKey）
@@ -360,6 +361,23 @@ function applyIntensity(theme){
   return out;
 }
 
+// 解析当前生效主题：默认/AI主题/自定义三态 + 深浅色（runtime/dual-theme.js）；无该模块回落内置默认
+function resolveActiveTheme(){
+  if(window.FoliaDualTheme){
+    var t=window.FoliaDualTheme.resolveTheme();
+    if(t)return Object.assign({},t);
+  }
+  return Object.assign({},window.FoliaTheme.DEFAULT_THEME);
+}
+
+// 主题来源/深浅色变化后：重解析并广播（模式/背景/样式窗口同步）
+function refreshTheme(){
+  currentTheme=applyIntensity(resolveActiveTheme());
+  broadcastTheme();
+  if(window.FoliaStyleWindow&&window.FoliaStyleWindow.onThemeSourceChange){
+    window.FoliaStyleWindow.onThemeSourceChange();
+  }
+}
 
 // 广播主题给当前模式与背景
 function broadcastTheme(){
@@ -633,8 +651,17 @@ function onSongMaybeChanged(){
     if(window.FoliaBeatFx){
       window.FoliaBeatFx.resetForSong();
     }
-    if(window.FoliaBeatFx){
-      window.FoliaBeatFx.resetForSong();
+    // 取色是异步的：先广播默认主题保证即时可用，取色完成后再广播新主题
+    // （AI主题/自定义模式下主题由用户固定，不随封面取色变化）
+    if(window.FoliaDualTheme&&window.FoliaDualTheme.getState().mode!=='default'){
+      refreshTheme();
+    }else{
+      currentTheme=applyIntensity(Object.assign({},window.FoliaTheme.DEFAULT_THEME));
+      broadcastTheme();
+      window.FoliaTheme.buildThemeFromCover(S.coverUrl).then(function(t){
+        currentTheme=applyIntensity(t);
+        broadcastTheme();
+      });
     }
   }
   if(randomModePerSong&&key!==lastSongKeyForRandom){
@@ -1370,9 +1397,6 @@ function tick(now){
   if(window.FoliaBeatFx){
     window.FoliaBeatFx.tick(effectiveLyricTimeMs()/1000,S.isPlaying);
   }
-  if(window.FoliaBeatFx){
-    window.FoliaBeatFx.tick(effectiveLyricTimeMs()/1000,S.isPlaying);
-  }
   // 进度条/时间文本：始终使用真实播放时间（不受歌词时间矫正影响）
   var localT=getLocalTimeMs();
   if(S.durationMs>0){
@@ -1536,6 +1560,49 @@ window.FoliaBridge={
   applyLyricFilterRegex:applyLyricFilterRegex,
   resetLyricFilterRegex:resetLyricFilterRegex,
   setLyricTimeOffset:setLyricTimeOffset,
+  // 主题（默认/AI主题/自定义 + 深浅色，runtime/dual-theme.js）
+  getDualThemeState:function(){
+    return window.FoliaDualTheme?window.FoliaDualTheme.getState():{mode:'default',daylight:false,ai:null,custom:null};
+  },
+  setThemeMode:function(mode){
+    if(window.FoliaDualTheme)window.FoliaDualTheme.setMode(mode);
+    refreshTheme();
+  },
+  setDaylight:function(daylight){
+    if(window.FoliaDualTheme)window.FoliaDualTheme.setDaylight(Boolean(daylight));
+    refreshTheme();
+  },
+  // 生成AI主题：封面取色 + 内置生成算法（上游无 AI key 时的同款回退路径）
+  generateAiTheme:function(){
+    var dual=window.FoliaDualTheme;
+    if(!dual)return Promise.resolve(null);
+    return dual.generateFromCover(S.coverUrl).then(function(theme){
+      dual.setAiTheme(theme);
+      refreshTheme();
+      return dual.getState();
+    });
+  },
+  saveAiTheme:function(theme){
+    if(window.FoliaDualTheme)window.FoliaDualTheme.setAiTheme(theme);
+    refreshTheme();
+    return window.FoliaDualTheme?window.FoliaDualTheme.getState():null;
+  },
+  saveCustomTheme:function(theme){
+    if(window.FoliaDualTheme)window.FoliaDualTheme.setCustomTheme(theme);
+    refreshTheme();
+    return window.FoliaDualTheme?window.FoliaDualTheme.getState():null;
+  },
+  // 手动导入 AI 主题（JSON 文本；解析失败返回 null）
+  importAiThemeJson:function(text){
+    var dual=window.FoliaDualTheme;
+    if(!dual||typeof text!=='string')return null;
+    try{
+      var parsed=JSON.parse(text);
+      dual.setAiTheme(dual.sanitizeDualTheme(parsed));
+      refreshTheme();
+      return dual.getState();
+    }catch(e){return null}
+  },
   // 实时预览帧订阅（实时源）：返回注销函数
   onFrame:function(cb){
     if(typeof cb!=='function')return function(){};
@@ -1553,8 +1620,8 @@ window.FoliaBridge={
 // ===== 启动 =====
 // 恢复动画模式：localStorage 可能存的是旧体系 id，经注册表映射；默认 classic（流光，与原版一致）
 currentAnimMode=window.FoliaRegistry.resolveId(localStorage.getItem('folia-animMode')||'classic');
-// 初始化主题（默认主题 + 当前强度；切歌后由封面取色异步更新）
-currentTheme=Object.assign({},window.FoliaTheme.DEFAULT_THEME,{animationIntensity:currentIntensity});
+// 初始化主题（默认/AI主题/自定义三态解析 + 当前强度；默认模式下切歌后由封面取色异步更新）
+currentTheme=applyIntensity(resolveActiveTheme());
 // 恢复外观设置（字重 CSS 变量 + 模式层整体透明度）
 applyLyricFontWeight();
 (function(){

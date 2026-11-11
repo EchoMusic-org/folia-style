@@ -684,6 +684,314 @@
     tabRefreshers.visualizer = function () { renderTab() }
   }
 
+  // ===== 主题（默认 / AI主题 / 自定义 + 深浅色 + 编辑器，复刻上游 ThemeSourceRow/ThemeNameRow/ThemeQuickEditor） =====
+  function renderThemeSection(colBody) {
+    var st = getState()
+    var dual = bridge().getDualThemeState()
+    colBody.appendChild(Kit.groupTitle('主题'))
+    var card = Kit.el('div', 'fsw-card')
+
+    // 三段模式选择：当前侧色的圆点标识（上游 SourceDot）
+    var modeOptions = [
+      { value: 'default', label: '默认' },
+      { value: 'ai', label: 'AI主题' },
+      { value: 'custom', label: '自定义' }
+    ]
+    var modeControl = Kit.segmented({
+      options: modeOptions,
+      value: dual.mode,
+      onChange: function (v) {
+        bridge().setThemeMode(v)
+        renderTab()
+      }
+    })
+    card.appendChild(Kit.row('主题来源', modeControl.root, { hint: '默认随封面取色；AI主题/自定义固定使用保存的主题' }))
+
+    // 主题名 + 深浅色 + 生成 + 编辑
+    var active = st.theme || {}
+    var sideWrap = Kit.el('div', 'fsw-theme-actions')
+    var daylightBtn = Kit.el('button', 'fsw-mini-btn', dual.daylight ? '☀ 浅色' : '☾ 深色')
+    daylightBtn.type = 'button'
+    daylightBtn.title = '切换深浅色'
+    daylightBtn.addEventListener('click', function () {
+      bridge().setDaylight(!dual.daylight)
+      renderTab()
+    })
+    sideWrap.appendChild(daylightBtn)
+    var genBtn = Kit.el('button', 'fsw-mini-btn', '✦ 生成AI主题')
+    genBtn.type = 'button'
+    genBtn.title = '从封面取色生成明暗双主题'
+    genBtn.addEventListener('click', function () {
+      genBtn.disabled = true
+      genBtn.textContent = '生成中…'
+      bridge().generateAiTheme().then(function () {
+        renderTab()
+      }).catch(function () {
+        genBtn.disabled = false
+        genBtn.textContent = '✦ 生成AI主题'
+      })
+    })
+    sideWrap.appendChild(genBtn)
+    var editBtn = Kit.el('button', 'fsw-mini-btn', '🎨 编辑')
+    editBtn.type = 'button'
+    editBtn.title = '快速编辑主题（明暗双侧四色 + 名称）'
+    editBtn.addEventListener('click', function () {
+      openThemeEditor()
+    })
+    sideWrap.appendChild(editBtn)
+    card.appendChild(Kit.row((active.name || '默认主题'), sideWrap, { hint: (active.provider || '随封面取色') + (active.description ? ' · ' + active.description : '') }))
+    colBody.appendChild(card)
+  }
+
+  // ===== 主题快速编辑对话框 =====
+  // 编辑草稿（明暗双侧四色 + 名称），保存时写回 AI 主题 / 自定义主题（default 模式保存为自定义并切换）。
+  var themeEditorState = { open: false }
+
+  function openThemeEditor() {
+    if (themeEditorState.open) return
+    var st = getState()
+    var dual = bridge().getDualThemeState()
+    // 草稿起点：ai → ai 双侧；custom → custom 双侧；default → 由当前主题合成双侧
+    var source = dual.mode === 'ai' && dual.ai ? dual.ai : (dual.mode === 'custom' && dual.custom ? dual.custom : null)
+    if (!source) {
+      var base = st.theme || { backgroundColor: '#09090b', primaryColor: '#f4f4f5', accentColor: '#f4f4f5', secondaryColor: '#71717a' }
+      source = {
+        light: Object.assign({}, base, { name: (base.name || '主题') + ' 浅色' }),
+        dark: Object.assign({}, base, { name: base.name || '主题' })
+      }
+    }
+    var draft = {
+      light: JSON.parse(JSON.stringify(source.light)),
+      dark: JSON.parse(JSON.stringify(source.dark))
+    }
+    var editingSide = dual.daylight ? 'light' : 'dark'
+    var savingMode = dual.mode === 'ai' ? 'ai' : 'custom'
+
+    var overlay = Kit.el('div', 'fsw-modal-overlay')
+    var dialog = Kit.el('div', 'fsw-modal fsw-theme-editor')
+    var header = Kit.el('div', 'fsw-modal-head')
+    header.appendChild(Kit.el('div', 'fsw-modal-title', '编辑主题'))
+    var closeBtn = Kit.el('button', 'fsw-mini-btn', '×')
+    closeBtn.type = 'button'
+    closeBtn.addEventListener('click', function () { closeThemeEditor() })
+    header.appendChild(closeBtn)
+    dialog.appendChild(header)
+
+    var body = Kit.el('div', 'fsw-theme-body')
+    // 左列：侧别切换 + 四色井 + 名称
+    var left = Kit.el('div', 'fsw-theme-left')
+    var sideSeg = Kit.segmented({
+      options: [{ value: 'light', label: '亮色主题' }, { value: 'dark', label: '暗色主题' }],
+      value: editingSide,
+      onChange: function (v) {
+        editingSide = v
+        renderColors()
+      }
+    })
+    left.appendChild(sideSeg.root)
+    var COLOR_FIELDS = [
+      { key: 'backgroundColor', label: '背景' },
+      { key: 'primaryColor', label: '主文本' },
+      { key: 'accentColor', label: '强调色' },
+      { key: 'secondaryColor', label: '辅助色' }
+    ]
+    var wellsWrap = Kit.el('div', 'fsw-theme-wells')
+    left.appendChild(wellsWrap)
+    var nameInput = Kit.textInput({
+      value: draft[editingSide].name || '',
+      placeholder: '主题名称',
+      onCommit: function (v) {
+        draft[editingSide].name = v
+      }
+    })
+    left.appendChild(Kit.row('主题名称', nameInput.root))
+    body.appendChild(left)
+
+    // 右列：推荐色（封面取色）+ 当前强调色选择
+    var right = Kit.el('div', 'fsw-theme-right')
+    var accentColorCtl = Kit.colorInput({
+      value: draft[editingSide].accentColor,
+      onChange: function (v) {
+        draft[editingSide].accentColor = v
+        renderColors()
+      }
+    })
+    right.appendChild(Kit.row('强调色', accentColorCtl.root, { hint: '高亮、按钮与歌词发光颜色' }))
+    var swatchWrap = Kit.el('div', 'fsw-swatch-grid')
+    var swatchHint = Kit.el('div', 'fsw-empty-hint', '推荐色加载中…')
+    swatchWrap.appendChild(swatchHint)
+    right.appendChild(Kit.row('推荐色', swatchWrap, { hint: '来自封面取色，点击设为强调色' }))
+    body.appendChild(right)
+    dialog.appendChild(body)
+
+    // footer：导入 / 复制 / 重置 / 保存
+    var footer = Kit.el('div', 'fsw-modal-foot')
+    var importBtn = Kit.el('button', 'fsw-btn', '导入 JSON')
+    importBtn.type = 'button'
+    var importBox = null
+    importBtn.addEventListener('click', function () {
+      if (importBox) {
+        var text = importBox.value
+        var saved = bridge().importAiThemeJson(text)
+        if (!saved) {
+          importBox.classList.add('invalid')
+          return
+        }
+        // 导入的是双侧 AI 主题：覆盖草稿并保存为对应类型
+        draft.light = JSON.parse(JSON.stringify(saved.ai.light))
+        draft.dark = JSON.parse(JSON.stringify(saved.ai.dark))
+        if (importBox.parentNode) importBox.parentNode.removeChild(importBox)
+        importBox = null
+        renderColors()
+        return
+      }
+      importBox = document.createElement('textarea')
+      importBox.className = 'fsw-import-box'
+      importBox.placeholder = '粘贴主题 JSON（{ light: {...}, dark: {...} }）'
+      footer.insertBefore(importBox, footer.firstChild)
+    })
+    footer.appendChild(importBtn)
+    var copyBtn = Kit.el('button', 'fsw-btn', '复制 JSON')
+    copyBtn.type = 'button'
+    copyBtn.addEventListener('click', function () {
+      var json = JSON.stringify({ light: draft.light, dark: draft.dark }, null, 2)
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(json).catch(function () { /* 忽略 */ })
+      }
+    })
+    footer.appendChild(copyBtn)
+    var spacer = Kit.el('div', 'fsw-modal-spacer')
+    footer.appendChild(spacer)
+    var resetBtn = Kit.el('button', 'fsw-btn', '重置')
+    resetBtn.type = 'button'
+    resetBtn.addEventListener('click', function () {
+      // 回到打开时的起点
+      var fresh = source
+      draft.light = JSON.parse(JSON.stringify(fresh.light))
+      draft.dark = JSON.parse(JSON.stringify(fresh.dark))
+      renderColors()
+    })
+    footer.appendChild(resetBtn)
+    var saveBtn = Kit.el('button', 'fsw-btn primary', '保存主题')
+    saveBtn.type = 'button'
+    saveBtn.addEventListener('click', function () {
+      if (savingMode === 'ai') bridge().saveAiTheme(draft)
+      else bridge().saveCustomTheme(draft)
+      closeThemeEditor()
+      renderTab()
+    })
+    footer.appendChild(saveBtn)
+    dialog.appendChild(footer)
+    overlay.appendChild(dialog)
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) closeThemeEditor()
+    })
+    root.appendChild(overlay)
+    themeEditorState.open = true
+    themeEditorState.overlay = overlay
+
+    function renderColors() {
+      wellsWrap.innerHTML = ''
+      COLOR_FIELDS.forEach(function (field) {
+        var well = Kit.el('div', 'fsw-theme-well' + (field.key === 'accentColor' ? ' accent' : ''))
+        var picker = document.createElement('input')
+        picker.type = 'color'
+        picker.value = normalizeHex6(draft[editingSide][field.key])
+        picker.addEventListener('input', function () {
+          draft[editingSide][field.key] = picker.value
+          hexText.textContent = picker.value.toUpperCase()
+        })
+        var hexText = Kit.el('span', 'fsw-theme-hex', String(draft[editingSide][field.key] || '').toUpperCase())
+        var labelWrap = Kit.el('div', 'fsw-theme-well-label')
+        labelWrap.appendChild(Kit.el('div', 'fsw-theme-well-name', field.label))
+        labelWrap.appendChild(hexText)
+        well.appendChild(picker)
+        well.appendChild(labelWrap)
+        wellsWrap.appendChild(well)
+      })
+      nameInput.setValue(draft[editingSide].name || '')
+      accentColorCtl.setValue(normalizeHex6(draft[editingSide].accentColor))
+      // 推荐色（封面取色 + 原主题色），异步
+      swatchWrap.innerHTML = ''
+      swatchWrap.appendChild(Kit.el('div', 'fsw-empty-hint', '推荐色加载中…'))
+      bridge().getDualThemeState()
+      var recSource = window.FoliaDualTheme
+      if (recSource && recSource.recommendedColors) {
+        recSource.recommendedColors(getState().coverUrl, draft[editingSide]).then(function (colors) {
+          swatchWrap.innerHTML = ''
+          colors.forEach(function (color) {
+            var swatch = Kit.el('button', 'fsw-swatch')
+            swatch.type = 'button'
+            swatch.style.background = color
+            swatch.title = color
+            swatch.addEventListener('click', function () {
+              draft[editingSide].accentColor = color
+              renderColors()
+            })
+            swatchWrap.appendChild(swatch)
+          })
+        })
+      }
+    }
+
+    renderColors()
+  }
+
+  function normalizeHex6(color) {
+    var value = String(color || '#000000')
+    if (/^#[0-9a-fA-F]{6}$/.test(value)) return value
+    if (/^#[0-9a-fA-F]{3}$/.test(value)) {
+      return '#' + value.slice(1).split('').map(function (c) { return c + c }).join('')
+    }
+    return '#000000'
+  }
+
+  function closeThemeEditor() {
+    if (!themeEditorState.open) return
+    if (themeEditorState.overlay && themeEditorState.overlay.parentNode) {
+      themeEditorState.overlay.parentNode.removeChild(themeEditorState.overlay)
+    }
+    themeEditorState.open = false
+    themeEditorState.overlay = null
+  }
+
+  // ===== 智能动感：当前样式的节拍效果（跟随上游 BeatEffectsGroup） =====
+  function renderBeatEffects(colBody, modeId) {
+    var fx = window.FoliaBeatFx
+    if (!fx) return
+    var defs = fx.BEAT_EFFECT_DEFS.filter(function (def) { return def.mode === modeId })
+    if (!defs.length) return
+    colBody.appendChild(Kit.groupTitle('智能动感 · 节拍效果'))
+    var card = Kit.el('div', 'fsw-card')
+    if (!fx.smartBeatActive()) {
+      card.appendChild(Kit.el('div', 'fsw-empty-hint', '智能动感当前关闭（在「全局」页开启后生效）'))
+    }
+    defs.forEach(function (def) {
+      var settings = fx.getEffectSettings(def.id)
+      var toggle = Kit.switchControl({
+        value: settings.on,
+        onChange: function (next) {
+          fx.setEffectSettings(def.id, { on: next })
+        }
+      })
+      card.appendChild(Kit.row(def.label, toggle.root))
+      var strength = Kit.slider({
+        min: 0, max: 2, step: 0.05, value: settings.strength,
+        onDraft: function (v) { fx.setEffectSettings(def.id, { strength: v }) },
+        onCommit: function (v) { fx.setEffectSettings(def.id, { strength: v }) }
+      })
+      card.appendChild(Kit.row('强度', strength.root, { hint: '1 是调校时的样子，0 关闭' }))
+    })
+    colBody.appendChild(card)
+  }
+
+  // 单键 patch（点路径）：交给 FoliaTunings 的 merge 归一化
+  function setPathPatch(key, value) {
+    var patch = {}
+    setPath(patch, key, value)
+    return patch
+  }
+
   // ===== 背景页 =====
   function renderBackgroundTab(colBody) {
     var st = getState()
@@ -963,6 +1271,7 @@
   // ===== 全局页 =====
   function renderGlobalTab(colBody) {
     var st = getState()
+    renderThemeSection(colBody)
     colBody.appendChild(Kit.groupTitle('歌词过滤'))
     var filterCard = Kit.el('div', 'fsw-card')
     var filterEnabled = st.lyricFilterEnabled !== false
@@ -1130,5 +1439,16 @@
       if (!state.open) return
       if (state.tab === 'common') renderTab()
     },
+    // 主题来源/深浅色/主题内容变化（bridge refreshTheme 触发）：舞台换主题 + 界面变量同步
+    onThemeSourceChange: function () {
+      if (!state.open) return
+      syncThemeVars()
+      var st = getState()
+      if (stage && st.theme) stage.setTheme(st.theme)
+      rebuildBgPreview()
+      thumbCache = {}
+      renderShelf()
+      if (state.tab === 'global' || state.tab === 'common') renderTab()
+    }
   }
 })()

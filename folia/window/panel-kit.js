@@ -227,7 +227,48 @@
     return el('div', 'fsw-group-title', text)
   }
 
+  // ===== 多选开关组：值是数组（成员为 options 的 value 子集，按 options 顺序） =====
+  function multiSwitch(opts) {
+    var root = el('div', 'fsw-multi')
+    var value = normalizeMulti(opts.options, opts.value)
+    var buttons = []
+    opts.options.forEach(function (option) {
+      var btn = el('button', 'fsw-multi-item')
+      btn.type = 'button'
+      btn.textContent = option.label
+      function render() {
+        btn.classList.toggle('checked', value.indexOf(option.value) >= 0)
+      }
+      render()
+      btn.addEventListener('click', function () {
+        var index = value.indexOf(option.value)
+        if (index >= 0) value.splice(index, 1)
+        else value.push(option.value)
+        render()
+        if (opts.onChange) opts.onChange(value.slice())
+      })
+      buttons.push({ option: option, render: render })
+      root.appendChild(btn)
+    })
+    return {
+      root: root,
+      setValue: function (v) {
+        value = normalizeMulti(opts.options, v)
+        buttons.forEach(function (item) { item.render() })
+      }
+    }
+  }
 
+  function normalizeMulti(options, value) {
+    var list = Array.isArray(value) ? value : []
+    var out = []
+    options.forEach(function (option) {
+      if (list.indexOf(option.value) >= 0) out.push(option.value)
+    })
+    return out
+  }
+
+  // ===== schema 页渲染器 =====
   // schema: { groups:[{ title, keys:[spec] }] }，spec 来自 FoliaTunings
   // get(key) 读当前值；patch(key, value, commit) 写入（draft 或 commit）
   // 返回 { root, refresh }：refresh 重读全部控件值（外部状态变化时同步）
@@ -271,7 +312,15 @@
             onDraft: function (v) { api.patch(spec.key, v, false) },
             onChange: function (v) { api.patch(spec.key, v, true) }
           })
-        }        if (!control) return
+        } else if (spec.type === 'multi') {
+          // 多选开关组（值是数组，如雾笺的 appear/fade/layouts/scenery）：每项一个小开关
+          control = multiSwitch({
+            options: spec.options,
+            value: getPath(api.get(), spec.key),
+            onChange: function (v) { api.patch(spec.key, v, true) }
+          })
+        }
+        if (!control) return
         var rowEl = row(spec.label, control.root, { sub: spec.sub })
         card.appendChild(rowEl)
         controls.push({ spec: spec, control: control, rowEl: rowEl })
@@ -284,7 +333,11 @@
       controls.forEach(function (item) {
         var vw = item.spec.visibleWhen
         var show = true
-        if (vw) show = getPath(current, vw.key) === vw.eq
+        if (vw) {
+          // eq：等于才显示；neq：不等于才显示（如雾笺的颠簸在水族箱时隐藏）
+          var actual = getPath(current, vw.key)
+          show = vw.neq !== undefined ? actual !== vw.neq : actual === vw.eq
+        }
         item.rowEl.style.display = show ? '' : 'none'
         // 值同步（外部 reset 等）
         var v = getPath(current, item.spec.key)
