@@ -151,7 +151,7 @@ iframe → 宿主（`bridge.html` 内 `parent.postMessage`）：
 复刻上游 folia-major VisPlayground：StudioWindow 外壳（暗层 + 居中 1240×780，头部返回 + 标题）、左侧示例舞台（内置示例歌词/实时画面双源 + 暂停 + 舞台背景预览实例）、样式架（14 样式 + 随机，canvas 简化缩略图）、右侧 420px 设置列五页（动画/背景/字体/字幕/全局）。
 
 - **draft/commit 语义**：滑条 input 只更新 draft 并经 `setTuning` 热更舞台实例（实时反馈），change（松手）才写 localStorage 并应用到主页面；不支持热更的模式松手后重建舞台与主页面实例。网格/开关/分段即时 commit。
-- **缩略图**：canvas 2D 简化绘制（主题底色 + 示例文字 + 按样式特征微调），随主题变化缓存失效；不做逐样式真实渲染（避免 14 组 pixi/three 并行）。
+- **缩略图**：活实例冻结快照（window/frozen-picture.js，复刻上游 preview/ 管线：真实模式实例挂与播放页等大的离屏舞台、poster 帧渲染、画好且静止后整棵 DOM 冻结克隆——canvas drawImage 拷贝 + 动画当前值写死内联，随即销毁实例并 loseContext 回收 WebGL 上下文）；全页串行做图 + LRU 32 缓存 + 两次空台降级回 canvas 简笔图（缓存 dataURL）；随主题变化缓存失效。
 - **明确不做**：字体样式选择与自定义字体（字体族跟随宿主）、画布图片上传池（tempera layerImages）、背景自定义图片上传。
 - **已知取舍**：cappella 头像来源对已渲染消息不回溯；字幕内容（翻译/罗马音）跟随宿主歌词页设置（iframe 内 secondary 为混合值，不可拆分）；字重全局覆盖仅接 classic/cadenza/partita/tilt/claddagh 五个模式（machi/花火/雾笺按上游 ownFontSize 自动排版不接）。
 

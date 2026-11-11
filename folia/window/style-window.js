@@ -439,13 +439,33 @@
         bridge().setAnimMode(mode.id)
       })
       refs.shelf.appendChild(card)
-      // 缩略图懒绘制（缓存 dataURL）
+      // 缩略图：优先活实例冻结快照（真实渲染一帧后冻结克隆），不可用时回退 canvas 简笔图（缓存 dataURL）
       var key = mode.id
-      if (thumbCache[key]) {
-        drawThumbFromCache(canvas, thumbCache[key])
+      var frozen = window.FoliaFrozenPicture
+        ? window.FoliaFrozenPicture.peek(mode.id, st.theme, 'default')
+        : null
+      if (frozen) {
+        canvas.style.display = 'none'
+        var frozenClone = frozen.cloneNode(true)
+        frozenClone.classList.add('fsw-frozen-thumb')
+        card.insertBefore(frozenClone, label)
       } else {
-        drawThumb(canvas, mode.id, st.theme, false)
-        thumbCache[key] = canvas.toDataURL()
+        if (thumbCache[key]) {
+          drawThumbFromCache(canvas, thumbCache[key])
+        } else {
+          drawThumb(canvas, mode.id, st.theme, false)
+          thumbCache[key] = canvas.toDataURL()
+        }
+        // 排队做真实快照（串行做图，好了换上）
+        if (window.FoliaFrozenPicture) {
+          window.FoliaFrozenPicture.request(mode.id, st.theme, 'default', function (node) {
+            if (node && card.isConnected) {
+              canvas.style.display = 'none'
+              node.classList.add('fsw-frozen-thumb')
+              card.insertBefore(node, label)
+            }
+          })
+        }
       }
     })
     // 随机卡片

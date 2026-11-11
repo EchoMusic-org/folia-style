@@ -300,3 +300,10 @@
   .fsw-col-body{overflow:visible}
 }
 
+/* 活实例冻结快照缩略图（fsw-frozen-thumb：绝对定位铺满卡片，内部按舞台比例缩放） */
+.fsw-frozen-thumb{
+  position:absolute;inset:0;overflow:hidden;border-radius:inherit;
+}
+.fsw-frozen-thumb > *{position:absolute !important;transform-origin:center center}
+
+
