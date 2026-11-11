@@ -10,7 +10,7 @@
   var THREE = window.THREE
 
   var BLOOM_SCALE = 4
-  /** UnrealBloomPass 一半分辨率时各级的模糊核半径。 */
+  /** 各级模糊核半径（使用时按 size×2/scale 折算，等效 UnrealBloomPass 一半分辨率的 3,5,7,9,11）。 */
   var KERNEL_SIZES = [6, 10, 14, 18, 22]
   var N_MIPS = 5
   var BLUR_X = new THREE.Vector2(1, 0)

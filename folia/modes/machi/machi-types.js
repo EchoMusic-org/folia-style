@@ -101,15 +101,16 @@
 
   /**
    * 画质：每项认得的值留下，缺的、坏的回默认。
-   * 插件没有全局歌词画布挡位，「跟随全局」按默认值解释（渲染 1 倍、抗锯齿 SMAA，即原高档）。
+   * 插件没有全局歌词画布挡位，「跟随全局」按默认值解释（渲染 1 倍、抗锯齿关）。
    */
   function normalizeMachiQuality(raw) {
     var input = raw && typeof raw === 'object' ? raw : {}
     var d = DEFAULT_MACHI_QUALITY
     var renderScale = input.renderScale
-    if (renderScale === MACHI_FOLLOW_GLOBAL) renderScale = MACHI_FOLLOW_GLOBAL
-    else if (MACHI_RENDER_SCALES.indexOf(Number(renderScale)) >= 0) renderScale = Number(renderScale)
-    else renderScale = d.renderScale
+    if (renderScale !== MACHI_FOLLOW_GLOBAL) {
+      // 「跟随全局」原样保留；其余只认合法挡位，坏的回默认
+      renderScale = MACHI_RENDER_SCALES.indexOf(Number(renderScale)) >= 0 ? Number(renderScale) : d.renderScale
+    }
     return {
       renderScale: renderScale,
       antialias: pickChoice([MACHI_FOLLOW_GLOBAL].concat(MACHI_ANTIALIAS_MODES), input.antialias, d.antialias),

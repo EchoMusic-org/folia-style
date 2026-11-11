@@ -1,5 +1,5 @@
 // 画质设置 → 实际用的渲染参数（移植自 engine/quality.ts，纯函数）。
-// 插件没有全局歌词画布挡位：「跟随全局」按全局默认值（1 倍、SMAA）解释。
+// 插件没有全局歌词画布挡位：「跟随全局」按全局默认值（1 倍、抗锯齿关）解释。
 // 自动降级：帧时长期偏高时在用户那套设置上按固定顺序一格格往下压（超采样 → MSAA → 辉光 → 倒影 → 景深 → 分辨率 →
 // 后期抗锯齿 → 阴影），只会比用户选的低，不会高。
 (function () {
@@ -95,7 +95,7 @@
    */
   function resolveMachiRenderQuality(quality, options) {
     var globalQuality = options.global || DEFAULT_GLOBAL_QUALITY
-    // 预览不跟全局挡位：跟随全局的两项按全局默认值（1 倍、SMAA）算。
+    // 预览不跟全局挡位：跟随全局的两项按全局默认值（1 倍、抗锯齿关）算。
     var settled = settle(quality, options.previewMode ? DEFAULT_GLOBAL_QUALITY : globalQuality)
     var wanted = quality.adaptive && !options.previewMode ? Math.max(0, Math.floor(options.degrade)) : 0
     var degrade = 0

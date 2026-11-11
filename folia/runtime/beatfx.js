@@ -100,7 +100,7 @@
   var FEED_FPS = 24
   var HISTORY_SECONDS = 8
   var HISTORY_MAX = Math.round(HISTORY_SECONDS * FEED_FPS)
-  // 频段 bin 范围按 bins 总数取比例（宿主对数映射 20Hz..20kHz）：底鼓 25~160Hz、军鼓 160~1.2kHz。
+  // 频段 bin 范围按 bins 总数取比例（宿主 mel 感知尺度映射 20Hz..20kHz）：底鼓 25~160Hz、军鼓 160~1.2kHz。
   function kickBins(total) {
     return [Math.max(0, Math.floor(total * 0.02)), Math.max(2, Math.floor(total * 0.29))]
   }

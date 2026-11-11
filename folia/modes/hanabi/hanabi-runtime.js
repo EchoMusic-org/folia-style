@@ -181,7 +181,7 @@
       app.stage.addChild(self.sceneLayer)
       app.stage.addChild(self.credits.holder)
       app.stage.addChild(self.overlayLayer)
-      // WebGL 上下文丢了：入口换一个 epoch 重建运行时。
+      // WebGL 上下文丢了：通知入口销毁并重建运行时。
       self._onContextLost = function (event) {
         event.preventDefault()
         if (self.options.onContextLost) self.options.onContextLost()

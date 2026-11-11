@@ -1,5 +1,5 @@
 // 模式注册表：替代 bridge.html 中硬编码的 modeMap，对齐 folia-major 的 visualizer registry。
-// 13 种歌词动画模式；旧 localStorage id 自动映射到新 id。
+// 17 种歌词动画模式；旧 localStorage id 自动映射到新 id。
 // 每个模式暴露统一生命周期：
 //   create(tuning) → { id, mount, setTheme, setLines, tick, destroy, [setFontScale], [setTuning] }
 // create(tuning)：tuning 为归一化后的样式参数对象（undefined 时模式用内置默认），由设置窗口调参传入。
@@ -15,7 +15,7 @@
     twgl: { file: 'vendor/twgl-full.min.js', globalCheck: function () { return window.twgl } }
   }
 
-  // 13 种模式定义（order 沿用原版 BUILTIN_VISUALIZER_MODES）
+  // 17 种模式定义（order 沿用原版 BUILTIN_VISUALIZER_MODES）
   // file 可为单个路径或路径数组（大体量模式按模块拆分，按数组顺序加载）
   var MODES = [
     // 商籁为大体量模式，拆分为 sonnet/ 目录下多个模块文件，按数组顺序加载

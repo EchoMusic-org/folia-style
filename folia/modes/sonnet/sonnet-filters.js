@@ -163,7 +163,7 @@ void main(void) {
   }
 
   // ---------- 印刷滤镜（原版 sonnetPrintFilters.ts） ----------
-  // 固定 RGB 色差：沿固定 25 度轴约 1.25px 的分离
+  // 固定 RGB 色差：沿固定 25 度轴分离，偏移 = 3 纹素 × uAmount（随强度滑杆变化）
   var RGB_SHIFT_FRAGMENT = `
 in vec2 vTextureCoord;
 out vec4 finalColor;

@@ -413,7 +413,7 @@
     })
   }
 
-  /** 清掉某个样式的缓存（tuning 变化后调用）；清空队列里同 key 的待办。 */
+  /** 清掉某个样式的缓存（tuning 变化后调用）；队列待办不清——成图时经 previewCreate 现读最新 tuning。 */
   function invalidate(modeId, theme) {
     var prefix = modeId + '::' + themeKeyOf(theme) + '::'
     var keys = []

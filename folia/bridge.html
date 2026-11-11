@@ -405,7 +405,7 @@ function broadcastTheme(){
   if(activeBg&&activeBg.setTheme){try{activeBg.setTheme(currentTheme)}catch(e){}}
 }
 
-// 切换歌词动画模式（13 种，vendor 与模式脚本由注册表按需懒加载）
+// 切换歌词动画模式（17 种，vendor 与模式脚本由注册表按需懒加载）
 async function switchToMode(id){
   switchingMode=true;
   activeMode=null; // 先清空引用，避免加载期间 tick 调到已销毁的旧实例
@@ -701,7 +701,7 @@ function onSongMaybeChanged(){
 var lyricsLayer=document.getElementById('lyrics-layer');
 var subtitleBar=document.getElementById('subtitle-bar');
 // 旧歌词行渲染体系（currentLineEl/进出退场调度/initFume/renderLyricLine/createNewLine/
-// updateWordStates/modeMap 分发）已整体移除，歌词渲染由 13 种新模式在 folia-mode-host 内自持完成。
+// updateWordStates/modeMap 分发）已整体移除，歌词渲染由 17 种新模式在 folia-mode-host 内自持完成。
 
 // ===== 队列 =====
 var queueList=document.getElementById('queue-list');
@@ -1392,7 +1392,7 @@ progressEl.addEventListener('click',function(e){
 },true);
 
 // ===== 主循环 =====
-// 频段归一化：S.bass/mid/treble 为 0~200 值域（bins 均值/255*200），这里 /200 归一到 0~1
+// 频段归一化：S.bass/mid/treble 为 0~200 值域（宿主 0~1 归一化 bins 三等分均值 ×200），这里 /200 归一到 0~1
 function normBand(v){return clamp((Number(v)||0)/200,0,1)}
 // 组装音频频段（0~1），模式/背景内部按需 ×255 还原原版值域。
 // 模块级单对象反复覆写：所有模式/背景都是每帧现读属性、不跨帧快照引用，

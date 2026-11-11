@@ -1,5 +1,5 @@
 // 底部字幕覆盖层：移植自 folia-major src/components/visualizer/VisualizerSubtitleOverlay.tsx
-// 13 种歌词模式共享：显示当前/最近一行的翻译（或罗马音），无字幕时预览下一行歌词。
+// 14 种歌词模式共享：显示当前/最近一行的翻译（或罗马音），无字幕时预览下一行歌词。
 // 纯标记/分隔行（"//"、"●●●"、纯符号）永不显示。
 (function () {
   'use strict'

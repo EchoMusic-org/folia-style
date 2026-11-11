@@ -60,7 +60,7 @@
       Math.abs(a.zoom - b.zoom) < 1e-5 && Math.abs(a.panX - b.panX) < 1e-4 && Math.abs(a.panZ - b.panZ) < 1e-4)
   }
 
-  // ===== 迷你轨道拖拽（OrbitControls 子集：左键旋转、右键平移、滚轮缩放、双指旋转/平移/缩放、阻尼、限角） =====
+  // ===== 迷你轨道拖拽（OrbitControls 子集：左键旋转、右键平移、滚轮缩放、双指平移/缩放、阻尼、限角） =====
   function MiniOrbit(camera, element) {
     this.camera = camera
     this.domElement = element
@@ -224,9 +224,7 @@
   }
 
   MiniOrbit.prototype.dispose = function () {
-    var el = this.domElement
-    // 简化：一次性克隆替换节点摘掉监听（dispose 只在运行时销毁时调一次）
-    void el
+    // 简化：不摘监听——dispose 只在运行时销毁时调一次，画布节点随后整体移除，监听随节点一起失效
   }
 
   // ===== 主镜头 =====

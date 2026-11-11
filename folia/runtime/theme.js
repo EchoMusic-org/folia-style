@@ -3,7 +3,7 @@
 //  utils/builtinTheme/{coverPaletteAnalysis,themeColorRanges,generateBuiltinDualTheme}.ts +
 //  services/baseThemes.ts）
 // 链路：封面 URL → canvas 采样像素 → 鲜艳色提取(5 色) → 调色板分析(基色/点缀色/色调)
-//      → 生成明暗双主题（含对比度求解）→ Theme 五色 + animationIntensity。
+//      → 生成明暗双主题（含对比度求解）→ Theme 四色 + animationIntensity。
 // 本插件歌词页为深色环境，实际使用 dark 主题；light 主题保留以维持结构一致。
 (function () {
   'use strict'

@@ -2,7 +2,7 @@
 // 椭圆环形歌词：每行字符沿细长椭圆弧排布（副轴 = Rx*0.09），行间相隔 180°，
 // 切行时整环以 spring(stiffness 55, damping 14, mass 0.9) 自转；
 // 每字符的深度 D / 焦点 F / 透明度 / 缩放 / 模糊 / 切向倾斜全部由弧上位置公式化得出；
-// 音频响应：半径随 power 缩放（按强度分档），中轴线随 bass/vocal 脉动变色。
+// 音频响应：半径随 power 缩放（按强度分档），中轴线随 bass/整体能量脉动变色。
 // 字符 advance 用 pretext 测量（缺失时回退 canvas measureText）。
 (function () {
   'use strict'

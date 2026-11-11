@@ -124,7 +124,7 @@
     var sky = new pixi.Container()
     view.addChild(sky)
 
-    // 烟花：尾迹 0.65 秒从底边升起，1.1 秒在曲名上方开金冠，随后两侧千輪、最后一朵双层。
+    // 烟花：尾迹 0.45 秒从底边升起，1.1 秒在曲名上方开金冠，随后两侧千輪、最后一朵双层。
     var fireworks = Fireworks.createFireworks(pixi, options.textures, {
       width: width,
       height: height,

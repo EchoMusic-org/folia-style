@@ -8,7 +8,7 @@
 
   var clamp = function (v, min, max) { return Math.min(Math.max(v, min), max) }
 
-  // ---------- spring 物理模拟（与 framer-motion 相同的弹簧方程，runge-kutta 风格积分） ----------
+  // ---------- spring 物理模拟（与 framer-motion 相同的弹簧方程，半隐式欧拉积分） ----------
   // 返回 { values: number[], duration: number }：从 0 到 1 归一化进度的位移采样序列
   function simulateSpring(options) {
     var stiffness = options.stiffness === undefined ? 100 : options.stiffness

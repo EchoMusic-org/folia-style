@@ -1,6 +1,6 @@
 // 歌词样式设置二级窗口（复刻上游 folia-major VisPlayground / StudioWindow）
 // 结构：暗层 + 居中窗口（头部 + 左舞台/样式架 + 右 420px 设置列）
-// 五个设置页：动画（样式参数面板/强度/随机池）、背景、字体、字幕、全局（歌词过滤/时间矫正）
+// 五个设置页：动画（样式参数面板/强度/随机池/节拍效果）、背景、字体、字幕、全局（歌词过滤/时间矫正/智能动感总开关）
 // 语义：滑条拖动只更新 draft（舞台实例热更），松手才写 localStorage 并应用到主页面；
 //       样式架选择直接切换主页面样式；窗口打开时主页面模式/背景暂停（GPU 让给预览舞台）。
 // 运行于 bridge.html 所在 iframe，经 window.FoliaBridge / FoliaTunings / FoliaRegistry 等协作。

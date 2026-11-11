@@ -1,6 +1,6 @@
 // 主题十六进制色彩数学（移植自 folia-major utils/themeColorMath.ts）：
 // RGB/HSL 转换、WCAG 亮度与对比度、保持色相求解对比度下限的亮度调节。
-// 町景/花火/雾笺的调色板共用。颜色只接受 #rrggbb 形态。
+// 町景/花火/雾笺的调色板共用。颜色接受 #rgb/#rrggbb/rgb()/rgba() 形态（解析后归一到 RGB 三通道）。
 (function () {
   'use strict'
 

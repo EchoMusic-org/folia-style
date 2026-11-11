@@ -5,7 +5,7 @@
 //   useVisualizerSongCommit（已提交歌曲滞后门）→ 简化为「歌词签名 + 2 秒确认纯音乐」；
 //   useVisualizerPixiHost（rebuild: 抗锯齿/透明/上下文丢失）→ 上下文丢失时销毁重建；
 //   VisualizerSubtitleOverlay → window.FoliaSubtitleOverlay；取景控制条（MachiCameraBar）→ 画布直接拖拽（相机已接）。
-// 智能动感（模拟节拍/效果强度）由共享 window.FoliaBeatFx 供数（任务3 接线）。
+// 智能动感（模拟节拍/效果强度）由共享 window.FoliaBeatFx 供数。
 // 字号：町景按场景里屏幕和招牌的大小自动排歌词字号（ownFontSizeNotice），setFontScale 不接。
 (function () {
   'use strict'
@@ -72,14 +72,14 @@
       }
     }
 
-    /** 歌词签名变了：300ms 内没再变才提交（连续翻行时少重建）。纯音乐 2 秒确认。 */
+    /** 歌词签名变了立即提交（签名相同则跳过）。纯音乐 2 秒确认。 */
     function commitSong() {
       var sig = linesSignature(currentSeed, lines)
       if (sig === committed.sig) return
       committed.sig = sig
       window.clearTimeout(committed.graceTimer)
       if (lines.length === 0) {
-        // 2 秒内没歌词 → 纯音乐：只画间奏（场景照常，烟花/天气照常）。
+        // 2 秒内没歌词 → 纯音乐：只画间奏（场景照常，天气照常）。
         committed.graceTimer = window.setTimeout(function () {
           committed.isInstrumental = true
           committed.lines = []
@@ -116,7 +116,7 @@
           previewMode: Boolean(definitionPreview),
           transparent: false,
           onContextLost: function () {
-            // WebGL 上下文丢了：换一个 epoch 重建。
+            // WebGL 上下文丢了：销毁旧运行时重建。
             scheduleRebuild()
           }
         })
@@ -185,7 +185,7 @@
         currentTime = frameState.currentTime || 0
         audioPower = frameState.audioPower || 0
         currentLineIndex = frameState.currentLineIndex !== undefined ? frameState.currentLineIndex : -1
-        // 曲名/歌手变了：更新种子（按歌选场景/天气、招牌曲名都依赖它）并提交换歌
+        // 曲名/歌手/专辑变了：更新种子（按歌选场景/天气、招牌曲名都依赖它）并提交换歌
         var nextTitle = frameState.songTitle || ''
         var nextArtist = frameState.songArtist || ''
         var nextAlbum = frameState.songAlbum || ''
