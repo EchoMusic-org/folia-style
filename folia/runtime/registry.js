@@ -10,6 +10,7 @@
   var VENDOR_LIBS = {
     pixi: { file: 'vendor/pixi.min.js', globalCheck: function () { return window.PIXI } },
     three: { file: 'vendor/three.iife.js', globalCheck: function () { return window.THREE } },
+    smaa: { file: 'vendor/smaa.iife.js', globalCheck: function () { return window.FoliaSmaa } },
     pretext: { file: 'vendor/pretext.iife.js', globalCheck: function () { return window.Pretext } },
     paperShaders: { file: 'vendor/paper-shaders.iife.js', globalCheck: function () { return window.PaperShaders } },
     twgl: { file: 'vendor/twgl-full.min.js', globalCheck: function () { return window.twgl } }
@@ -166,7 +167,7 @@
       'modes/machi/machi-scenes.js',
       'modes/machi/machi-runtime.js',
       'modes/machi.js'
-    ], globalName: 'FoliaModeMachi', vendor: ['three'], order: 28, majorId: 'machi' },
+    ], globalName: 'FoliaModeMachi', vendor: ['three', 'smaa'], order: 28, majorId: 'machi' },
     { id: 'classic', legacyIds: ['liuguang'], label: '流光', file: 'modes/classic.js', globalName: 'FoliaModeClassic', vendor: [], order: 30, majorId: 'classic' },
     { id: 'cadenza', legacyIds: ['xinxiang'], label: '心象', file: 'modes/cadenza.js', globalName: 'FoliaModeCadenza', vendor: ['pretext'], order: 40, majorId: 'cadenza' },
     { id: 'partita', legacyIds: ['yunjie'], label: '云阶', file: 'modes/partita.js', globalName: 'FoliaModePartita', vendor: [], order: 50, majorId: 'partita' },

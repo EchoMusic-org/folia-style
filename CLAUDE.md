@@ -72,7 +72,8 @@ INTEGRATION.md           # bridge.html 接入规范（历史文档，集成已�
     url.js                 # 网页 iframe 背景
   vendor/                # 预编译第三方库（从 CDN 下载 / esbuild 打包的 IIFE，按需懒加载）
     pixi.min.js            # PixiJS 8.20（window.PIXI）— 商籁/凝彩
-    three.iife.js          # three 0.185（window.THREE）— 镜台
+    three.iife.js          # three 0.185（window.THREE）— 镜台/町景
+    smaa.iife.js           # three 0.185 examples 的 SMAAPass（window.FoliaSmaa）— 町景抗锯齿；dev/build-smaa-vendor.mjs 生成
     pretext.iife.js        # @chenglou/pretext 0.0.8（window.Pretext）— 心象/浮名/莫奈/时计/群唱/回环/商籁/凝彩
     paper-shaders.iife.js  # @paper-design/shaders core（window.PaperShaders）— latent/nomand 背景
     twgl-full.min.js       # twgl.js 7（window.twgl）— 星野背景
@@ -159,7 +160,7 @@ iframe → 宿主（`bridge.html` 内 `parent.postMessage`）：
 
 均整只移植自 folia-major（React+TS+Pixi/three/原生 WebGL2 → 原生 JS IIFE 模块目录 + 单入口），全部配置项开放（`runtime/tunings.js` schema 与上游 SettingsPanel/zh-CN 文案逐项对齐）。
 
-- **町景 machi**（`folia/modes/machi/` 24 模块 + `scene-konbini/kowloon/station.js` 三场景 + `modes/machi.js`，vendor three）：正交 3D 微缩街景（三个场景按歌 seed 自动选），天空/天光/天气（雨雪雾/昼夜渐变）/湿地面（水洼+倒影+雨点闪光）/积雪/招牌（LED 屏逐字点亮、霓虹、のぼり旗、跑马灯）/车流/光柱/白气/后处理（墨线、贴地雾、bloom、横向光条、散景景深、色差暗角颗粒、FXAA）。画质六项（分辨率/抗锯齿/阴影/倒影/辉光/自动降级）全接；SMAA 档降级为 FXAA（vendor three 未含 examples，超采样不受影响）；取景控制条不移植（画布直接拖拽/右键平移/滚轮缩放，自定义视角松手停稳自动写回 tuning 对应场景）。
+- **町景 machi**（`folia/modes/machi/` 24 模块 + `scene-konbini/kowloon/station.js` 三场景 + `modes/machi.js`，vendor three）：正交 3D 微缩街景（三个场景按歌 seed 自动选），天空/天光/天气（雨雪雾/昼夜渐变）/湿地面（水洼+倒影+雨点闪光）/积雪/招牌（LED 屏逐字点亮、霓虹、のぼり旗、跑马灯）/车流/光柱/白气/后处理（墨线、贴地雾、bloom、横向光条、散景景深、色差暗角颗粒、FXAA/SMAA）。画质六项（分辨率/抗锯齿/阴影/倒影/辉光/自动降级）全接；SMAA 由 `vendor/smaa.iife.js`（three examples 打包，查找表解码完才启用、否则 FXAA 兜底）提供；取景控制条不移植（画布直接拖拽/右键平移/滚轮缩放，自定义视角松手停稳自动写回 tuning 对应场景）。
 - **共享底座**（`folia/runtime/`）：`seed-hash.js`（FNV-1a/mulberry32，上游 visualizerSeedHash）、`theme-color-math.js`（hex 色彩数学）、`beatfx.js`（智能动感：上游 clock.ts 节拍时钟 + 主程序频谱实时节拍/鼓点检测，见「智能动感」节）。- **花火 hanabi**（`folia/modes/hanabi/` 34 模块 + `modes/hanabi.js`，vendor pixi 8.20.1 ≈ 上游 8.21）：整歌编译镜头程序（段落/转场/50 预设烟花/确定性编译）、文字引擎（图集/9 排版/12 字底块/17 入场 9 强调 7 退场逐字动画）、PV 拼贴、烟花闭式解（14 种 BURST_PRESETS 全有解）、夜空/画框/片尾卡、全屏辉光（副歌权重）、随拍开花与推镜（智能动感，接 FoliaBeatFx）、换歌两帧交接（PixiSongSwap）+ 段落场景缓存（retire 逐帧释放）。移植规范见 `folia/modes/hanabi/PORTING.md`。
 - **移植差异通则**：- **花火 hanabi**（`folia/modes/hanabi/` 34 模块 + `modes/hanabi.js`，vendor pixi 8.20.1 ≈ 上游 8.21）：整歌编译镜头程序（段落/转场/50 预设烟花/确定性编译）、文字引擎（图集/9 排版/12 字底块/逐字动画）、PV 拼贴、烟花闭式解（14 种 BURST_PRESETS 全有解）、夜空/画框/片尾卡、全屏辉光（副歌权重）、随拍开花与推镜（智能动感，接 FoliaBeatFx）、换歌两帧交接 + 段落场景缓存（retire 逐帧释放）。移植规范见 `folia/modes/hanabi/PORTING.md`。
 - **雾笺 nebbia**（`folia/modes/nebbia/` + `modes/nebbia.js`，原生 WebGL2 无 vendor）：起雾玻璃上写字（笔顺骨架/手写变形）、雨窗/凝露/融雪三种玻璃、雨夜街景/梦海水族箱两种窗外、指纹抹除/哈气/水珠物理。
@@ -181,7 +182,7 @@ iframe → 宿主（`bridge.html` 内 `parent.postMessage`）：
 ## 开发流程与本地约定
 
 - 无 npm 脚本、无 lockfile：本插件是纯运行时源码。修改后由 EchoMusic 主程序热加载或重启拾取。
-- vendor 库文件是预编译产物（pixi/three 从 jsdelivr 下载；three/pretext/paper-shaders 用 `npx esbuild --bundle --format=iife` 打包），更新时重新生成即可，不要手工编辑。
+- vendor 库文件是预编译产物（pixi/three 从 jsdelivr 下载；three/pretext/paper-shaders 用 `npx esbuild --bundle --format=iife` 打包；smaa.iife.js 由 `dev/build-smaa-vendor.mjs` 从钉死的 three examples 拼接生成，升级 three 时改脚本里的版本与哈希后重跑），更新时重新生成即可，不要手工编辑。
 - 依赖 EchoMusic 主仓与 `native/*` 原生模块能正常构建才有得测；那些属于主仓，别在插件目录里操作它们。
 - Git 由用户手动管理；不要自动 `git add / commit / push`。
 - 使用 Node 时默认 ESM、无分号、Windows 环境；本插件的宿主入口 `index.js` 已经是 ESM（`export function activate`）。iframe 内脚本走 IIFE，是浏览器脚本环境。注释一律中文。

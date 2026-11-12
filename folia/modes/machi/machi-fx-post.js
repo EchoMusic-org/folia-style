@@ -1,7 +1,7 @@
 // 町景的后处理链（移植自 engine/fx/post.ts + postPasses.ts + bloomPass.ts + lensPass.ts，合成一文件）：
 // 场景画进带深度贴图的 HDR 目标（MSAA）→ 氛围（墨线、贴地薄雾、云和闪电）→ bloom（五级降分辨率高斯）→
-// 横向镜头光条 → 镜头（散景景深、色差、暗角、颗粒，色调映射输出）→ 抗锯齿（FXAA；上游的 SMAA 在插件里降级为
-// FXAA——vendor three 未含 examples 的 SMAA，超采样档不受影响）。
+// 横向镜头光条 → 镜头（散景景深、色差、暗角、颗粒，色调映射输出）→ 抗锯齿（FXAA 或 SMAA；
+// SMAA 来自 vendor/smaa.iife.js 打包的 three examples，上游同样排在镜头之后、在 sRGB 显示颜色上做边缘检测）。
 // 上游用的 EffectComposer / Pass / FullScreenQuad / UnrealBloomPass / FXAAPass 都来自 three examples，
 // vendor three.iife.js 未含，这里按其行为等价自实现（bloom 合成按 UnrealBloomPass 的默认权重与色调）。
 (function () {
@@ -467,7 +467,7 @@
     this.quad.dispose()
   }
 
-  // ===== FXAA（three FXAAShader 的标准实现；SMAA 档在插件里降级为它） =====
+  // ===== FXAA（three FXAAShader 的标准实现；SMAA 未就绪或缺库时的兜底，也是 FXAA 档本身） =====
   var FXAA_FRAGMENT = '\nuniform sampler2D tDiffuse;\nuniform vec2 resolution;\nvarying vec2 vUv;\n' +
     '#define FXAA_SPAN_MAX 8.0\n' +
     '#define FXAA_REDUCE_MUL (1.0 / 8.0)\n' +
@@ -863,7 +863,18 @@
     }, cutout)
     // 合成器的缓冲只装镜头 pass 画好的显示用颜色（给抗锯齿读）：8 位。
     this.workTarget = new THREE.WebGLRenderTarget(Math.max(1, size.x), Math.max(1, size.y), { type: THREE.UnsignedByteType, depthBuffer: false })
-    // SMAA 档降级为 FXAA（vendor three 未含 examples 的 SMAA；超采样档不受影响）。
+    // SMAA（vendor/smaa.iife.js 里的 three examples 实现）：排在镜头之后、上屏之前，读同一张 8 位显示颜色。
+    // 缺库（vendor 加载失败/被裁剪）或两张查找表还没解码完时用 FXAA 兜底，不让画质档位把模式拖垮。
+    var Smaa = window.FoliaSmaa
+    this.smaa = Smaa && Smaa.SMAAPass ? new Smaa.SMAAPass() : null
+    this._smaaReady = false
+    if (this.smaa) {
+      // 边缘/权重两张中间图的值都在 0..1，上游把 three 默认的半精度改成 8 位省带宽（首次使用前改，还没分配显存）
+      this.smaa._edgesRT.texture.type = THREE.UnsignedByteType
+      this.smaa._weightsRT.texture.type = THREE.UnsignedByteType
+      this.smaa.setSize(Math.max(1, size.x), Math.max(1, size.y))
+      this._watchSmaaTextures()
+    }
     this.fxaa = fxaaMaterial()
     this._quad = new FullScreenQuad()
     this.bloomAllowed = true
@@ -878,6 +889,26 @@
     get: function () { return this.scene.target }
   })
 
+  /**
+   * 两张查找表（area/search，data URI 的 Image）解码完才算就绪；之前用 FXAA 兜底。
+   * 上游没有这层门控（首帧可能拿空纹理），插件补上以免 SMAA 档起步闪一下未抗锯齿的画面。
+   */
+  MachiPost.prototype._watchSmaaTextures = function () {
+    var self = this
+    var area = this.smaa._areaTexture && this.smaa._areaTexture.image
+    var search = this.smaa._searchTexture && this.smaa._searchTexture.image
+    if (!area || !search || typeof area.decode !== 'function' || typeof search.decode !== 'function') {
+      this._smaaReady = true
+      return
+    }
+    Promise.all([area.decode(), search.decode()]).then(function () {
+      self._smaaReady = true
+    }).catch(function () {
+      // 解码失败极少见：保持 FXAA 兜底（空纹理虽然等价原图，但没必要冒险）
+      self._smaaReady = false
+    })
+  }
+
   /** 跟着画布改尺寸（在 renderer.setSize 之后调）。 */
   MachiPost.prototype.setSize = function () {
     var size = this._renderer.getDrawingBufferSize(new THREE.Vector2())
@@ -891,6 +922,7 @@
     this.streaks.setSize(width, height)
     this.lens.setSize(width, height)
     this.fxaa.uniforms.resolution.value.set(width, height)
+    if (this.smaa) this.smaa.setSize(width, height)
   }
 
   /** 换画质：MSAA 采样数变了就换一张场景目标。 */
@@ -907,6 +939,7 @@
     this.streaksAllowed = quality.streaks
     this.lens.dofEnabled = quality.dof
     this._aaEnabled = quality.postAA === 'fxaa' || quality.postAA === 'smaa'
+    this._postAA = quality.postAA
     this._applyGlow()
   }
 
@@ -964,10 +997,15 @@
     if (this.streaks.enabled) this.streaks.render(renderer)
     if (this._aaEnabled) {
       this.lens.render(renderer, this.workTarget)
-      this.fxaa.uniforms.tDiffuse.value = this.workTarget.texture
-      this._quad.material = this.fxaa
-      renderer.setRenderTarget(null)
-      this._quad.render(renderer)
+      if (this._postAA === 'smaa' && this.smaa && this._smaaReady) {
+        // 三 pass（边缘 → 权重 → 混合）：读 workTarget 的显示颜色、直接上屏（与上游同位置、同在 sRGB 上做）
+        this.smaa.render(renderer, null, this.workTarget)
+      } else {
+        this.fxaa.uniforms.tDiffuse.value = this.workTarget.texture
+        this._quad.material = this.fxaa
+        renderer.setRenderTarget(null)
+        this._quad.render(renderer)
+      }
     } else {
       this.lens.render(renderer, null)
     }
@@ -981,6 +1019,7 @@
     this.black.dispose()
     this.fxaa.dispose()
     this._quad.dispose()
+    if (this.smaa) this.smaa.dispose()
     this.workTarget.dispose()
     if (this.scene.target.depthTexture) this.scene.target.depthTexture.dispose()
     this.scene.target.dispose()
