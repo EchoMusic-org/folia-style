@@ -248,6 +248,29 @@
     return clone
   }
 
+  /**
+   * 复制一张冻结图（同上游 pictureRule 的 copyImage）：cloneNode 不复制 canvas 的位图内容，
+   * 克隆后按顺序把源 canvas 再画一遍——缓存节点里的 canvas 已有像素，这里 1:1 重画。
+   * 不做这步的话，缓存/挂载两次深克隆会把所有 canvas 变空白（只剩 DOM 元素）。
+   */
+  function cloneFrozen(node) {
+    var copy = node.cloneNode(true)
+    var fromList = node.querySelectorAll('canvas')
+    var toList = copy.querySelectorAll('canvas')
+    for (var i = 0; i < fromList.length && i < toList.length; i += 1) {
+      var from = fromList[i]
+      var to = toList[i]
+      if (from.width <= 0 || from.height <= 0) continue
+      to.width = from.width
+      to.height = from.height
+      var ctx = to.getContext('2d')
+      if (ctx) {
+        try { ctx.drawImage(from, 0, 0) } catch (e) { /* 跨域污染：留空 */ }
+      }
+    }
+    return copy
+  }
+
   // ===== WebGL 上下文回收（followCanvases） =====
   function loseContexts(stage) {
     var canvases = stage.querySelectorAll('canvas')
@@ -309,8 +332,8 @@
     var key = cacheKey(modeId, theme, sampleId)
     var cached = cacheGet(key)
     if (cached) {
-      // 同一张冻结图显示在多处时要再克隆一次（一个元素只能在一个位置）
-      onReady(cached.cloneNode(true))
+      // 同一张冻结图显示在多处时要再克隆一次（一个元素只能在一个位置）；canvas 位图须重画
+      onReady(cloneFrozen(cached))
       return
     }
     var rest = lastMadeAt[key] ? NEW_IMAGE_REST_MS : FIRST_IMAGE_REST_MS
@@ -329,7 +352,7 @@
     running = null
     if (node) {
       cachePut(task.key, node)
-      task.onReady(node.cloneNode(true))
+      task.onReady(cloneFrozen(node))
     } else if (task.tries + 1 < IMAGE_TRIES) {
       // 空台重试一次
       task.tries += 1
@@ -432,6 +455,8 @@
     request: request,
     invalidate: invalidate,
     disposeStageHost: disposeStageHost,
+    /** 复制一张冻结图：cloneNode 不复制 canvas 位图，这里克隆后重画（样式架 peek 路径用）。 */
+    clone: cloneFrozen,
     STAGE_WIDTH: STAGE_WIDTH, // 缩放基准：卡片宽 / STAGE_WIDTH = 缩略图 scale
     STAGE_HEIGHT: STAGE_HEIGHT,
     /** 供样式窗口查询缓存命中（同步路径优先用缓存）。 */

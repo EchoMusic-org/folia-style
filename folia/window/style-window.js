@@ -481,7 +481,11 @@
         ? window.FoliaFrozenPicture.peek(mode.id, st.theme, 'default')
         : null
       if (frozen) {
-        mountFrozenThumb(frozen.cloneNode(true), card, canvas, label)
+        // cloneNode 不复制 canvas 位图，经 FoliaFrozenPicture.clone 重画后再挂载
+        var frozenCopy = window.FoliaFrozenPicture && window.FoliaFrozenPicture.clone
+          ? window.FoliaFrozenPicture.clone(frozen)
+          : frozen.cloneNode(true)
+        mountFrozenThumb(frozenCopy, card, canvas, label)
       } else if (thumbCache[key]) {
         drawThumbFromCache(canvas, thumbCache[key])
         // 排队做真实快照（串行做图，好了换上）
