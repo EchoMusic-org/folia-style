@@ -680,6 +680,24 @@
   }
 
   function schemaOf(schemas, id) { return schemas[id] || null }
+  /**
+   * 深合并补丁：单键点路径补丁（如 {quality:{shadows:'off'}}）逐层并进基线，
+   * 不丢同组兄弟字段（町景阴影/倒影互串、镜台几何显隐、背景嵌套项均依赖此语义）。
+   * 纯对象递归合并；数组与原始值整体替换（multi 选项值、随机池等数组语义）。
+   */
+  function mergePatch(base, patch) {
+    var out = Object.assign({}, base)
+    Object.keys(patch).forEach(function (k) {
+      var pv = patch[k]
+      if (pv && typeof pv === 'object' && !Array.isArray(pv)
+        && out[k] && typeof out[k] === 'object' && !Array.isArray(out[k])) {
+        out[k] = mergePatch(out[k], pv)
+      } else {
+        out[k] = pv
+      }
+    })
+    return out
+  }
   function isModified(schemas, prefix, id) {
     var schema = schemaOf(schemas, id)
     if (!schema) return false
@@ -706,7 +724,7 @@
         var schema = schemaOf(schemas, id)
         if (!schema) return null
         var held = readJson(prefix + id, {})
-        var next = resolveBySchema(schema, Object.assign({}, held, patch || {}))
+        var next = resolveBySchema(schema, mergePatch(held, patch || {}))
         writeJson(prefix + id, next)
         return next
       },
@@ -794,7 +812,8 @@
     },
     setAppearance: function (patch) {
       var held = readJson(APPEARANCE_KEY, APPEARANCE_DEFAULT)
-      var next = normalizeAppearance(Object.assign({}, held, patch || {}))
+      // 深合并：调用方可传单键补丁（如 {subtitle:{opacity:v}}）不丢 subtitle 其他字段
+      var next = normalizeAppearance(mergePatch(held, patch || {}))
       writeJson(APPEARANCE_KEY, next)
       return next
     },
