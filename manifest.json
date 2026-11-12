@@ -7,6 +7,7 @@
   "path": "",
   "repo": "https://github.com/EchoMusic-org/folia-style",
   "homepage": "https://github.com/EchoMusic-org/folia-style",
+  "downloadUrl": "https://gh-mirror.928233.xyz/github/EchoMusic-org/folia-style/releases/download/latest/folia-style.zip",
   "main": "index.js",
   "style": "style.css",
   "tags": [

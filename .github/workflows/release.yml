@@ -1,5 +1,5 @@
 # 发布流程：推 v* tag 自动构建插件包并发布 GitHub Release。
-# 产物：folia-style-<版本>.zip，解压后目录即插件根（manifest.json 在顶层），可直接放入主程序 plugins/ 目录。
+# 产物：folia-style.zip，解压后目录即插件根（manifest.json 在顶层），可直接放入主程序 plugins/ 目录。
 # 构建内容：全量 JS 语法检查 → 雾笺笔顺数据自动生成（AnimCJK，Arphic 授权文本随附）→ manifest 版本对齐 tag → 打包。
 # 更新日志：上一个 tag（没有则全部）到本次的 commit 标题逐条汇总。
 name: Release
@@ -38,13 +38,10 @@ jobs:
       - name: 生成雾笺笔顺数据（AnimCJK，许可文本已随附在 folia/assets/licenses/）
         run: node dev/build-nebbia-strokes.mjs
 
-      - name: 打包（zip 根目录即插件根）
+      - name: 打包（zip 根目录即插件根，文件名固定 folia-style.zip）
         run: |
-          VER="${GITHUB_REF_NAME#v}"
-          zip -r "folia-style-${VER}.zip" manifest.json index.js style.css folia
-          unzip -l "folia-style-${VER}.zip" | head -8
-        env:
-          GITHUB_REF_NAME: ${{ github.ref_name }}
+          zip -r "folia-style.zip" manifest.json index.js style.css folia
+          unzip -l "folia-style.zip" | head -8
 
       - name: 生成更新日志（取自提交标题）
         run: |
@@ -58,5 +55,5 @@ jobs:
       - name: 发布 Release
         uses: softprops/action-gh-release@v2
         with:
-          files: folia-style-*.zip
+          files: folia-style.zip
           body_path: release_notes.md
