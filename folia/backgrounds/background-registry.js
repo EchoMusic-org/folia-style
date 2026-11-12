@@ -120,6 +120,35 @@
     return activeBg ? { instance: activeBg, def: activeDef } : null
   }
 
+  /**
+   * 创建背景预览实例（供样式设置窗口舞台使用）：
+   * 加载 vendor + 脚本 → factory.create(config) → 挂载到指定宿主。
+   * 与 switchBackground 完全隔离（不触碰 activeBg/activeDef），脚本与 vendor 复用同一份缓存。
+   */
+  async function previewCreate(id, hostEl, config) {
+    var def = byId(resolveId(id))
+    if (!def) return Promise.reject(new Error('未知背景: ' + id))
+    if (def.vendor) await loadVendor(def.vendor)
+    await loadFiles(def.file)
+    var factory = window[def.globalName]
+    if (!factory || typeof factory.create !== 'function') {
+      throw new Error('背景缺少工厂: ' + def.globalName)
+    }
+    var instance = factory.create(config ? config.config : undefined)
+    instance.id = def.id
+    instance.mount(hostEl)
+    if (config) {
+      if (instance.setTheme && config.theme) instance.setTheme(config.theme)
+      if (instance.setCoverUrl && config.coverUrl !== undefined) instance.setCoverUrl(config.coverUrl)
+    }
+    return {
+      instance: instance,
+      destroy: function () {
+        try { instance.destroy() } catch (e) { /* 预览销毁失败不阻塞 */ }
+      }
+    }
+  }
+
   function getModeOptions() {
     return MODES.slice().sort(function (a, b) { return a.order - b.order }).map(function (def) {
       return { id: def.id, label: def.label }
@@ -131,6 +160,7 @@
     byId: byId,
     resolveId: resolveId,
     switchBackground: switchBackground,
+    previewCreate: previewCreate,
     destroyActive: destroyActive,
     getActive: getActive,
     getModeOptions: getModeOptions

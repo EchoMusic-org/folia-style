@@ -940,7 +940,7 @@ function createPlayerFrame(ctx, closeOverlay) {
 
         try {
           spectrumDispose = ctx.audio.spectrum.subscribe(
-            { fps: 24, binCount: 64, smoothing: 0.82, scale: 'mel', includeWaveform: true },
+            { fps: 24, binCount: 64, smoothing: 0.6, scale: 'mel', includeWaveform: false },
             (frame) => {
               lastSpectrumFrame = {
                 bins: Array.isArray(frame?.bins) ? frame.bins : [],

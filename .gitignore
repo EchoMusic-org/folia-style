@@ -1,0 +1,5 @@
+# 雾笺笔顺数据是构建期产物（dev/build-nebbia-strokes.mjs 每次构建从钉死的 AnimCJK commit 下载生成，
+# 数据是 Arphic 授权、不进仓库，许可文本已静态随附在 folia/assets/licenses/nebbia-strokes/）
+folia/assets/nebbia-strokes.json
+folia/assets/nebbia-strokes.json.*.tmp
+node_modules/

@@ -1,6 +1,31 @@
 /* ===== 基础样式 ===== */
 *{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-user-select:none}
-html,body{width:100%;height:100%;overflow:hidden;background:#09090b;color:#f4f4f5;font-family:var(--lyric-font-family,'Inter','PingFang SC','Microsoft YaHei','Noto Sans CJK SC',system-ui,sans-serif);-webkit-font-smoothing:antialiased;-webkit-user-drag:none;drag:none}
+/* 深浅色 token（照上游 settings kit 的 --st-* 体系）：表面色两套由 JS 按 daylight 注入，
+   文字/线/填充跟随 --text-primary 做 color-mix；页面底色 --st-page 是全页模式的兜底底色 */
+:root{
+  --text-primary:#f4f4f5;
+  --st-t1:var(--text-primary);
+  --st-t2:color-mix(in srgb,var(--text-primary) 62%,transparent);
+  --st-t3:color-mix(in srgb,var(--text-primary) 42%,transparent);
+  --st-line:color-mix(in srgb,var(--text-primary) 8%,transparent);
+  --st-line2:color-mix(in srgb,var(--text-primary) 16%,transparent);
+  --st-fill:color-mix(in srgb,var(--text-primary) 7%,transparent);
+  --st-fill2:color-mix(in srgb,var(--text-primary) 12%,transparent);
+  --st-track:color-mix(in srgb,var(--text-primary) 17%,transparent);
+  --st-win:#1a1a1d;
+  --st-side:#141416;
+  --st-card:#232327;
+  --st-raise:#45454c;
+  --st-knob:#ececee;
+  --st-win-glass:rgba(26,26,29,0.72);
+  --st-capsule:rgba(20,20,22,0.6);
+  --st-capsule-shadow:rgba(0,0,0,0.5);
+  --st-capsule-edge:rgba(255,255,255,0.04);
+  --st-page:#09090b;
+  --st-err:#ef6f6f;
+  --fsw-accent:#00f5d4;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--st-page,#09090b);color:var(--st-t1,#f4f4f5);font-family:var(--lyric-font-family,'Inter','PingFang SC','Microsoft YaHei','Noto Sans CJK SC',system-ui,sans-serif);-webkit-font-smoothing:antialiased;-webkit-user-drag:none;drag:none}
 /* 透明背景模式（transparent 背景 mount 时挂类）：根层让出背景，透出宿主窗口毛玻璃/透明材质 */
 html.folia-bg-transparent,html.folia-bg-transparent body{background:transparent}
 
@@ -11,7 +36,7 @@ html.folia-bg-transparent,html.folia-bg-transparent body{background:transparent}
 .center-glow{
   position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
   width:140vmin;height:140vmin;border-radius:50%;z-index:2;
-  background:radial-gradient(circle,rgba(255,255,255,0.08) 0%,rgba(255,255,255,0.06) 30%,rgba(255,255,255,0.03) 55%,transparent 75%);
+  background:radial-gradient(circle,rgba(255,255,255,0.08) 0%,var(--st-fill) 30%,rgba(255,255,255,0.03) 55%,transparent 75%);
   pointer-events:none;
   filter:blur(40px);
 }
@@ -158,7 +183,7 @@ html.folia-bg-transparent,html.folia-bg-transparent body{background:transparent}
 }
 .lyric-simple-text{
   font-size:clamp(1.8rem,5vw,3.5rem);font-weight:600;
-  color:rgba(255,255,255,0.85);text-align:center;
+  color:var(--st-t1);text-align:center;
   line-height:1.5;letter-spacing:0.02em;
   transition:opacity 0.4s ease;
 }
@@ -196,7 +221,7 @@ html.folia-bg-transparent,html.folia-bg-transparent body{background:transparent}
 }
 /* 副歌词 (翻译/读音) - 显示在控制条上方 */
 .subtitle-bar{
-  font-size:14px;color:rgba(255,255,255,0.45);
+  font-size:14px;color:var(--st-t2);
   text-align:center;min-height:20px;
   transition:opacity 0.4s ease;
   padding:0 20px;max-width:600px;
@@ -208,11 +233,11 @@ html.folia-bg-transparent,html.folia-bg-transparent body{background:transparent}
   grid-template-columns:auto 0fr auto;
   grid-template-rows:auto;
   align-items:center;
-  background:rgba(20,20,22,0.6);backdrop-filter:blur(24px) saturate(1.4);
-  border:1px solid rgba(255,255,255,0.06);
+  background:var(--st-capsule);backdrop-filter:blur(24px) saturate(1.4);
+  border:1px solid var(--st-fill);
   border-radius:999px;padding:10px 20px;
   width:220px;
-  box-shadow:0 8px 32px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.04);
+  box-shadow:0 8px 32px var(--st-capsule-shadow),inset 0 1px 0 var(--st-capsule-edge);
   transition:width 0.35s cubic-bezier(0.4,0,0.2,1),padding 0.35s cubic-bezier(0.4,0,0.2,1);
 }
 /* 迷你模式: 隐藏播放按钮、标题、右侧按钮 */
@@ -284,31 +309,31 @@ html.folia-bg-transparent,html.folia-bg-transparent body{background:transparent}
   min-width:0;height:100%;
 }
 .ctrl-sm-btn{
-  background:none;border:none;color:rgba(255,255,255,0.4);cursor:pointer;
+  background:none;border:none;color:var(--st-t3);cursor:pointer;
   width:24px;height:24px;border-radius:50%;flex-shrink:0;
   display:inline-flex;align-items:center;justify-content:center;
   transition:all 0.2s ease;padding:0;
 }
-.ctrl-sm-btn:hover{color:rgba(255,255,255,0.9);background:rgba(255,255,255,0.06)}
+.ctrl-sm-btn:hover{color:var(--st-t1);background:var(--st-fill)}
 .ctrl-title{
-  font-size:13px;font-weight:500;color:rgba(255,255,255,0.85);
+  font-size:13px;font-weight:500;color:var(--st-t1);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   max-width:200px;text-align:center;
   line-height:1;vertical-align:middle;
 }
 /* 进度条 */
 .ctrl-progress-row{display:flex;align-items:center;gap:10px;flex:1}
-.ctrl-time{font-size:11px;font-variant-numeric:tabular-nums;color:rgba(255,255,255,0.4);min-width:32px;text-align:center}
-.ctrl-progress{flex:1;height:4px;background:rgba(255,255,255,0.12);border-radius:2px;cursor:pointer;position:relative;overflow:visible}
+.ctrl-time{font-size:11px;font-variant-numeric:tabular-nums;color:var(--st-t3);min-width:32px;text-align:center}
+.ctrl-progress{flex:1;height:4px;background:var(--st-track);border-radius:2px;cursor:pointer;position:relative;overflow:visible}
 .ctrl-progress:hover{height:6px}
 .ctrl-progress-fill{
-  height:100%;background:rgba(255,255,255,0.85);border-radius:2px;
+  height:100%;background:var(--st-t1);border-radius:2px;
   transition:width 0.1s linear;position:relative;
 }
 .ctrl-progress-fill::after{
   content:'';position:absolute;right:-5px;top:50%;transform:translateY(-50%);
   width:10px;height:10px;background:#fff;border-radius:50%;
-  opacity:0;transition:opacity 0.2s ease;box-shadow:0 0 6px rgba(255,255,255,0.3);
+  opacity:0;transition:opacity 0.2s ease;box-shadow:0 0 6px var(--st-line2);
 }
 .ctrl-progress:hover .ctrl-progress-fill::after{opacity:1}
 
@@ -318,12 +343,12 @@ html.folia-bg-transparent,html.folia-bg-transparent body{background:transparent}
   grid-column:3;grid-row:1/3;
 }
 .ctrl-icon-btn{
-  background:none;border:none;color:rgba(255,255,255,0.45);cursor:pointer;
+  background:none;border:none;color:var(--st-t2);cursor:pointer;
   width:32px;height:32px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;
   transition:all 0.2s ease;pointer-events:auto;
 }
-.ctrl-icon-btn:hover{color:rgba(255,255,255,0.85);background:rgba(255,255,255,0.06)}
+.ctrl-icon-btn:hover{color:var(--st-t1);background:var(--st-fill)}
 .ctrl-icon-btn.fav-active{color:#ef4444}
 .ctrl-icon-btn.fav-active svg{fill:#ef4444;stroke:#ef4444}
 
@@ -359,7 +384,7 @@ html.folia-bg-transparent,html.folia-bg-transparent body{background:transparent}
   cursor:pointer;transition:all 0.2s ease;
   backdrop-filter:blur(8px);
 }
-.close-overlay-btn:hover{background:rgba(255,255,255,0.12);color:#fff;border-color:rgba(255,255,255,0.2)}
+.close-overlay-btn:hover{background:var(--st-track);color:#fff;border-color:rgba(255,255,255,0.2)}
 .close-overlay-btn svg{width:16px;height:16px;display:block;stroke:currentColor;fill:none}
 /* macOS 红绿灯占据左上角，关闭按钮右移避让（与主程序 OverlayHeader 的 mac-offset 对齐） */
 body.folia-mac-platform .close-overlay-btn{left:80px}
@@ -367,22 +392,22 @@ body.folia-mac-platform .close-overlay-btn{left:80px}
 /* ===== 队列面板 ===== */
 .queue-panel{
   position:absolute;right:0;top:0;bottom:0;width:320px;z-index:15;
-  background:rgba(9,9,11,0.95);backdrop-filter:blur(20px);
-  border-left:1px solid rgba(255,255,255,0.05);
+  background:var(--st-win);backdrop-filter:blur(20px);
+  border-left:1px solid var(--st-fill);
   transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);
   display:flex;flex-direction:column;
 }
 .queue-panel.open{transform:translateX(0)}
-.queue-header{padding:18px 18px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05)}
+.queue-header{padding:18px 18px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--st-fill)}
 .queue-title{font-size:14px;font-weight:600}
 .queue-count{font-size:11px;opacity:0.35;margin-top:2px}
 .queue-list{flex:1;overflow-y:auto;padding:6px 0}
 .queue-list::-webkit-scrollbar{width:3px}
-.queue-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.08);border-radius:2px}
+.queue-list::-webkit-scrollbar-thumb{background:var(--st-fill2);border-radius:2px}
 .queue-item{padding:8px 18px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:background 0.15s}
-.queue-item:hover{background:rgba(255,255,255,0.03)}
-.queue-item.active{background:rgba(255,255,255,0.05)}
-.qi-cover{width:34px;height:34px;border-radius:5px;background:rgba(255,255,255,0.05);overflow:hidden;flex-shrink:0}
+.queue-item:hover{background:var(--st-fill)}
+.queue-item.active{background:var(--st-fill)}
+.qi-cover{width:34px;height:34px;border-radius:5px;background:var(--st-fill);overflow:hidden;flex-shrink:0}
 .qi-cover img{width:100%;height:100%;object-fit:cover}
 .qi-info{flex:1;min-width:0}
 
@@ -390,8 +415,8 @@ body.folia-mac-platform .close-overlay-btn{left:80px}
 .settings-menu{
   position:fixed;bottom:60px;right:40px;z-index:25;
   width:280px;border-radius:24px;overflow:visible;
-  background:rgba(18,18,20,0.7);backdrop-filter:blur(24px);
-  border:1px solid rgba(255,255,255,0.06);
+  background:var(--st-win-glass);backdrop-filter:blur(24px);
+  border:1px solid var(--st-fill);
   box-shadow:0 12px 48px rgba(0,0,0,0.6);
   padding:20px;display:flex;flex-direction:column;align-items:center;
   transform:translateY(10px);opacity:0;
@@ -402,38 +427,38 @@ body.folia-mac-platform .close-overlay-btn{left:80px}
 /* 封面 */
 .sm-cover{
   width:240px;height:240px;border-radius:16px;overflow:hidden;
-  background:rgba(255,255,255,0.03);
+  background:var(--st-fill);
   display:flex;align-items:center;justify-content:center;
   box-shadow:0 4px 20px rgba(0,0,0,0.4);
   margin-bottom:18px;
 }
 .sm-cover img{width:100%;height:100%;object-fit:cover}
-.sm-cover-placeholder{color:rgba(255,255,255,0.15);font-size:48px}
+.sm-cover-placeholder{color:var(--st-fill2);font-size:48px}
 /* 按钮行 */
 .sm-actions{
   display:flex;gap:16px;padding:8px 10px;
-  background:rgba(255,255,255,0.06);border-radius:12px;
+  background:var(--st-fill);border-radius:12px;
   margin-bottom:20px;
 }
 .sm-action-btn{
   width:32px;height:32px;border-radius:8px;
   background:transparent;border:none;
-  color:rgba(255,255,255,0.45);cursor:pointer;
+  color:var(--st-t2);cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   transition:all 0.2s ease;
 }
-.sm-action-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
-.sm-action-btn.active{background:rgba(255,255,255,0.1);color:#fff}
+.sm-action-btn:hover{background:var(--st-fill2);color:var(--st-t1)}
+.sm-action-btn.active{background:var(--st-fill2);color:var(--st-t1)}
 .sm-action-btn svg{width:16px;height:16px;display:block;stroke:currentColor;fill:none}
 /* 歌曲信息 */
 .sm-info{text-align:center;display:flex;flex-direction:column;gap:6px;width:100%}
-.sm-title{font-size:20px;font-weight:700;color:#fff;line-height:1.3}
-.sm-artist{font-size:14px;color:rgba(255,255,255,0.5);cursor:default;line-height:1.4}
-.sm-artist-link{color:rgba(255,255,255,0.5);cursor:pointer;transition:color 0.2s}
-.sm-artist-link:hover{color:rgba(255,255,255,0.9)}
-.sm-artist-sep{color:rgba(255,255,255,0.25);margin:0 2px}
-.sm-album{font-size:13px;color:rgba(255,255,255,0.3);cursor:pointer;transition:color 0.2s}
-.sm-album:hover{color:rgba(255,255,255,0.7)}
+.sm-title{font-size:20px;font-weight:700;color:var(--st-t1);line-height:1.3}
+.sm-artist{font-size:14px;color:var(--st-t2);cursor:default;line-height:1.4}
+.sm-artist-link{color:var(--st-t2);cursor:pointer;transition:color 0.2s}
+.sm-artist-link:hover{color:var(--st-t1)}
+.sm-artist-sep{color:var(--st-line2);margin:0 2px}
+.sm-album{font-size:13px;color:var(--st-t3);cursor:pointer;transition:color 0.2s}
+.sm-album:hover{color:var(--st-t1)}
 /* 歌词子页面 */
 .sm-lyrics{display:none;width:100%;flex-direction:column;gap:12px}
 .sm-lyrics.active{display:flex}
@@ -442,8 +467,8 @@ body.folia-mac-platform .close-overlay-btn{left:80px}
 .lyric-filter-regex-row{display:flex}
 .lyric-filter-input{
   width:100%;height:30px;padding:0 9px;border-radius:8px;
-  border:1px solid rgba(255,255,255,0.12);
-  background:rgba(0,0,0,0.22);color:rgba(255,255,255,0.86);
+  border:1px solid var(--st-track);
+  background:rgba(0,0,0,0.22);color:var(--st-t1);
   font:11px/1.2 'Inter','PingFang SC','Microsoft YaHei',system-ui,sans-serif;
   outline:none;min-width:0
 }
@@ -454,29 +479,48 @@ body.folia-mac-platform .close-overlay-btn{left:80px}
 /* 设置子页面 */
 .sm-settings{display:none;width:100%;flex-direction:column;gap:16px}
 .sm-settings.active{display:flex}
-/* 三个大按钮 */
+/* 歌词样式设置入口（样式调节已统一收口到二级窗口） */
+.sm-style-entry{
+  width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;
+  border-radius:14px;border:1px solid rgba(0,245,212,0.22);
+  background:linear-gradient(135deg,rgba(0,245,212,0.10),rgba(0,245,212,0.03));
+  color:var(--st-t1);cursor:pointer;text-align:left;
+  transition:all 0.2s ease;
+}
+.sm-style-entry:hover{background:linear-gradient(135deg,rgba(0,245,212,0.16),rgba(0,245,212,0.06));border-color:rgba(0,245,212,0.36)}
+.sm-style-entry-icon{
+  width:34px;height:34px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,245,212,0.14);color:var(--fsw-accent,#00f5d4);
+}
+.sm-style-entry-icon svg{width:18px;height:18px;display:block}
+.sm-style-entry-text{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.sm-style-entry-title{font-size:13px;font-weight:600;color:var(--st-t1)}
+.sm-style-entry-desc{font-size:11px;color:var(--st-t3)}
+.sm-style-entry-arrow{width:14px;height:14px;flex-shrink:0;color:var(--st-t3)}
+/* 两个大按钮 */
 .sm-big-btns{display:flex;gap:10px}
 .sm-big-btn{
   flex:1;height:52px;border-radius:14px;border:none;
-  background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.45);
+  background:var(--st-fill);color:var(--st-t2);
   cursor:pointer;display:flex;align-items:center;justify-content:center;
   transition:all 0.2s ease;
 }
-.sm-big-btn:hover{background:rgba(255,255,255,0.1);color:#fff}
-.sm-big-btn.active{background:rgba(255,255,255,0.1);color:#fff}
+.sm-big-btn:hover{background:var(--st-fill2);color:var(--st-t1)}
+.sm-big-btn.active{background:var(--st-fill2);color:var(--st-t1)}
 .sm-big-btn.fav-active{background:rgba(220,38,38,0.15);color:#ef4444;border-color:rgba(220,38,38,0.3)}
 .sm-big-btn.fav-active svg{fill:#ef4444;stroke:#ef4444}
 .sm-big-btn svg{width:22px;height:22px;display:block;stroke:currentColor;fill:none;stroke-width:1.8}
 /* 音量控制 */
 .sm-volume{display:flex;flex-direction:column;gap:8px}
 .sm-volume-header{display:flex;align-items:center;justify-content:space-between}
-.sm-volume-label{font-size:12px;color:rgba(255,255,255,0.5)}
-.sm-volume-value{font-size:12px;color:rgba(255,255,255,0.5);font-variant-numeric:tabular-nums}
+.sm-volume-label{font-size:12px;color:var(--st-t2)}
+.sm-volume-value{font-size:12px;color:var(--st-t2);font-variant-numeric:tabular-nums}
 .sm-volume-row{display:flex;align-items:center;gap:10px}
-.sm-volume-icon{color:rgba(255,255,255,0.3);flex-shrink:0}
+.sm-volume-icon{color:var(--st-t3);flex-shrink:0}
 .sm-volume-icon svg{width:16px;height:16px;display:block;stroke:currentColor;fill:none}
-.sm-volume-track{flex:1;height:4px;background:rgba(255,255,255,0.12);border-radius:2px;cursor:pointer;position:relative}
-.sm-volume-fill{height:100%;background:rgba(255,255,255,0.7);border-radius:2px;pointer-events:none}
+.sm-volume-track{flex:1;height:4px;background:var(--st-track);border-radius:2px;cursor:pointer;position:relative}
+.sm-volume-fill{height:100%;background:var(--st-t1);border-radius:2px;pointer-events:none}
 .sm-volume-thumb{
   position:absolute;top:50%;left:0;transform:translate(-50%,-50%);
   width:14px;height:14px;border-radius:50%;background:#fff;
@@ -484,24 +528,24 @@ body.folia-mac-platform .close-overlay-btn{left:80px}
 }
 /* 行设置 */
 .sm-row{display:flex;align-items:center;justify-content:space-between}
-.sm-row-label{font-size:12px;color:rgba(255,255,255,0.5)}
+.sm-row-label{font-size:12px;color:var(--st-t2)}
 .sm-seg{display:flex;gap:6px}
 .sm-seg-btn{
-  padding:5px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);
-  background:transparent;color:rgba(255,255,255,0.4);font-size:11px;
+  padding:5px 14px;border-radius:8px;border:1px solid var(--st-fill2);
+  background:transparent;color:var(--st-t3);font-size:11px;
   cursor:pointer;transition:all 0.2s ease;
 }
-.sm-seg-btn:hover{border-color:rgba(255,255,255,0.2);color:rgba(255,255,255,0.7)}
-.sm-seg-btn.active{background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2);color:#fff}
+.sm-seg-btn:hover{border-color:var(--st-fill2);color:var(--st-t1)}
+.sm-seg-btn.active{background:var(--st-fill2);border-color:var(--st-fill2);color:var(--st-t1)}
 .sm-bg-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;vertical-align:middle;margin-right:4px}
 /* 歌词时间矫正控件 */
 .sm-mini-btn{
   width:30px;height:30px;border-radius:8px;
-  border:1px solid rgba(255,255,255,0.1);
-  background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.85);
+  border:1px solid var(--st-fill2);
+  background:var(--st-fill);color:var(--st-t1);
   font-size:18px;line-height:1;cursor:pointer;transition:all 0.2s ease;
 }
-.sm-mini-btn:hover:not(:disabled){border-color:rgba(255,255,255,0.25);background:rgba(255,255,255,0.12)}
+.sm-mini-btn:hover:not(:disabled){border-color:var(--st-line2);background:var(--st-track)}
 .sm-mini-btn:disabled{opacity:0.3;cursor:not-allowed}
 /* 网页背景 URL 管理（仅 url 背景时显示） */
 .url-bg-panel{display:none;flex-direction:column;gap:8px}
@@ -509,35 +553,35 @@ body.folia-mac-platform .close-overlay-btn{left:80px}
 .url-bg-list{display:flex;flex-direction:column;gap:4px;max-height:120px;overflow-y:auto}
 .url-bg-item{
   display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:8px;
-  border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);
-  color:rgba(255,255,255,0.55);font-size:11px;cursor:pointer;transition:all 0.2s ease;
+  border:1px solid var(--st-fill2);background:var(--st-fill);
+  color:var(--st-t2);font-size:11px;cursor:pointer;transition:all 0.2s ease;
 }
-.url-bg-item:hover{border-color:rgba(255,255,255,0.2);color:rgba(255,255,255,0.8)}
-.url-bg-item.active{border-color:rgba(0,245,212,0.34);background:rgba(0,245,212,0.06);color:rgba(255,255,255,0.9)}
+.url-bg-item:hover{border-color:var(--st-fill2);color:var(--st-t1)}
+.url-bg-item.active{border-color:rgba(0,245,212,0.34);background:rgba(0,245,212,0.06);color:var(--st-t1)}
 .url-bg-item-url{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .url-bg-item-del{
   width:18px;height:18px;border-radius:5px;border:none;flex-shrink:0;padding:0;
-  background:transparent;color:rgba(255,255,255,0.35);font-size:13px;line-height:1;
+  background:transparent;color:var(--st-t3);font-size:13px;line-height:1;
   cursor:pointer;transition:all 0.2s ease;
 }
-.url-bg-item-del:hover{background:rgba(255,255,255,0.12);color:#ef4444}
+.url-bg-item-del:hover{background:var(--st-track);color:#ef4444}
 /* 透明背景面板（滑块 + 毛玻璃三段开关，复用 url-bg-panel 显隐） */
 .url-bg-panel.disabled{opacity:0.45;pointer-events:none}
 .tr-panel-row{display:flex;align-items:center;gap:8px}
-.tr-panel-label{flex-shrink:0;font-size:11px;color:rgba(255,255,255,0.6)}
+.tr-panel-label{flex-shrink:0;font-size:11px;color:var(--st-t2)}
 .tr-opacity-range{
   flex:1;height:4px;margin:0;appearance:none;-webkit-appearance:none;border-radius:2px;
-  background:rgba(255,255,255,0.16);outline:none;cursor:pointer;
+  background:var(--st-track);outline:none;cursor:pointer;
 }
 .tr-opacity-range::-webkit-slider-thumb{
   appearance:none;-webkit-appearance:none;width:13px;height:13px;border-radius:50%;
   background:#fff;border:none;box-shadow:0 1px 4px rgba(0,0,0,0.4);
 }
-.tr-panel-hint{min-height:0;font-size:10px;line-height:1.5;color:rgba(255,255,255,0.4)}
+.tr-panel-hint{min-height:0;font-size:10px;line-height:1.5;color:var(--st-t3)}
 .tr-panel-hint:empty{display:none}
 .lyric-offset-value{
   min-width:48px;text-align:center;font-size:13px;
-  font-variant-numeric:tabular-nums;color:rgba(255,255,255,0.85);
+  font-variant-numeric:tabular-nums;color:var(--st-t1);
 }
 /* 动画模式下拉菜单 */
 .sm-anim-wrap{position:relative}
@@ -545,8 +589,8 @@ body.folia-mac-platform .close-overlay-btn{left:80px}
   position:absolute;bottom:calc(100% + 8px);right:0;z-index:30;
   min-width:140px;border-radius:14px;overflow:hidden;
   background:rgba(20,20,22,0.95);backdrop-filter:blur(24px);
-  border:1px solid rgba(255,255,255,0.06);
-  box-shadow:0 8px 32px rgba(0,0,0,0.5);
+  border:1px solid var(--st-fill);
+  box-shadow:0 8px 32px var(--st-capsule-shadow);
   padding:6px 0;
   transform:translateY(8px);opacity:0;
   pointer-events:none;
@@ -556,14 +600,14 @@ body.folia-mac-platform .close-overlay-btn{left:80px}
 .sm-anim-option{
   display:flex;align-items:center;gap:10px;
   padding:10px 16px;cursor:pointer;
-  color:rgba(255,255,255,0.5);font-size:13px;
+  color:var(--st-t2);font-size:13px;
   transition:background 0.15s ease;
 }
-.sm-anim-option:hover{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.8)}
-.sm-anim-option.selected{color:#fff;background:rgba(255,255,255,0.08)}
+.sm-anim-option:hover{background:var(--st-fill);color:var(--st-t1)}
+.sm-anim-option.selected{color:var(--st-t1);background:var(--st-fill2)}
 .sm-anim-dot{
   width:8px;height:8px;border-radius:50%;
-  background:rgba(255,255,255,0.15);flex-shrink:0;
+  background:var(--st-fill2);flex-shrink:0;
   transition:background 0.2s ease;
 }
 .sm-anim-option.selected .sm-anim-dot{background:#fff}
@@ -583,38 +627,39 @@ body.folia-mac-platform .close-overlay-btn{left:80px}
 .sm-queue{display:none;width:100%;flex-direction:column;gap:0}
 .sm-queue.active{display:flex}
 .sm-queue-header{display:flex;align-items:center;justify-content:space-between;padding:0 2px 10px}
-.sm-queue-title{font-size:13px;font-weight:600;color:rgba(255,255,255,0.7)}
-.sm-queue-count{font-size:12px;color:rgba(255,255,255,0.35)}
+.sm-queue-title{font-size:13px;font-weight:600;color:var(--st-t1)}
+.sm-queue-count{font-size:12px;color:var(--st-t3)}
 .sm-queue-actions{display:flex;gap:4px}
 .sm-queue-shuffle,.sm-queue-locate{
   width:28px;height:28px;border-radius:6px;border:none;
-  background:transparent;color:rgba(255,255,255,0.4);cursor:pointer;
+  background:transparent;color:var(--st-t3);cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   transition:all 0.2s ease;
 }
-.sm-queue-shuffle:hover,.sm-queue-locate:hover{color:#fff;background:rgba(255,255,255,0.08)}
+.sm-queue-shuffle:hover,.sm-queue-locate:hover{color:var(--st-t1);background:var(--st-fill2)}
 .sm-queue-shuffle svg,.sm-queue-locate svg{width:16px;height:16px;display:block;stroke:currentColor;fill:none}
-.sm-queue-list{display:flex;flex-direction:column;max-height:300px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.15) transparent}
+.sm-queue-list{display:flex;flex-direction:column;max-height:300px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--st-fill2) transparent}
 .sm-queue-list::-webkit-scrollbar{width:6px}
 .sm-queue-list::-webkit-scrollbar-track{background:transparent}
-.sm-queue-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:3px}
-.sm-queue-list::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.25)}
+.sm-queue-list::-webkit-scrollbar-thumb{background:var(--st-fill2);border-radius:3px}
+.sm-queue-list::-webkit-scrollbar-thumb:hover{background:var(--st-line2)}
 .sm-queue-item{
   display:flex;flex-direction:column;gap:2px;
   padding:10px 8px;border-radius:10px;cursor:pointer;
   transition:background 0.15s ease;
 }
-.sm-queue-item:hover{background:rgba(255,255,255,0.04)}
-.sm-queue-item.current{background:rgba(255,255,255,0.08)}
-.sm-queue-item.current .qi-title{color:#fff}
-.sm-queue-item.current .qi-artist{color:rgba(255,255,255,0.5)}
-.qi-title{font-size:13px;font-weight:500;color:rgba(255,255,255,0.8);line-height:1.3}
-.qi-artist{font-size:11px;color:rgba(255,255,255,0.35);line-height:1.3}
+.sm-queue-item:hover{background:var(--st-fill)}
+.sm-queue-item.current{background:var(--st-fill2)}
+.sm-queue-item.current .qi-title{color:var(--st-t1)}
+.sm-queue-item.current .qi-artist{color:var(--st-t2)}
+.qi-title{font-size:13px;font-weight:500;color:var(--st-t1);line-height:1.3}
+.qi-artist{font-size:11px;color:var(--st-t3);line-height:1.3}
 /* 设置按钮 */
 .settings-btn{
   position:fixed;bottom:38px;right:18px;z-index:20;
   width:48px;height:48px;border-radius:50%;
-  background:rgba(255,255,255,0.9);border:none;
+  /* 始终白底黑图标（浮在画面上的浮层钮，不随窗口深浅） */
+  background:rgba(255,255,255,0.92);border:none;
   color:#000;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   transition:all 0.2s ease;

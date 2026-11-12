@@ -10,7 +10,7 @@
   var RenderHints = window.FoliaRenderHints
   var GraphemeTiming = window.FoliaGraphemeTiming
 
-  // 无逐字数据时按行时长均匀切分字符（毫秒，每字最短 800ms，对齐现有 ModeUtils.buildAllChars 语义）
+  // 无逐字数据时按行时长均匀切分字符（毫秒，纯均分无最短时长；上游 ModeUtils.buildAllChars 另有 800ms 下限，此处未实现）
   function buildEvenCharactersMs(line) {
     var allChars = []
     var txt = line.text || ''

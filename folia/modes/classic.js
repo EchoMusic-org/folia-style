@@ -1,5 +1,6 @@
 // 流光模式：移植自 folia-major src/components/visualizer/classic/Visualizer.tsx（默认模式）
-// 逐词弹性动画：三层词结构（发光层/本体层/合唱涟漪），词状态机 waiting → active → passed，
+// 逐词弹性动画：两层词结构（发光层/本体层；原版另有合唱涟漪层，宿主行数据无 isChorus 未移植），
+// 词状态机 waiting → active → passed，
 // 行进出场按 renderHints 的 lineTransitionMode 分三档，整行呼吸浮动。
 // 语义布局单元（CJK 语义分组 + 粘着标点）与原版管线一致。
 (function () {
@@ -28,13 +29,19 @@
     return Math.max(minPx, Math.min(valPx, maxPx))
   }
 
-  function createMode() {
+  // 原版 DEFAULT_CLASSIC_TUNING（types.ts）：插件布局管线仅消费 wordSpacing
+  // （enableWordRotation/useLegacyLayout/breathingFloatMultiplier/avoidOverlap 涉及布局核心逻辑，移植时未实现，不开放）
+  var DEFAULT_CLASSIC_TUNING = { wordSpacing: 0.7 }
+
+  function createMode(config) {
+    // tuning 由设置窗口传入（已按 schema 归一化），无 FoliaTunings 时回退内置默认
+    var TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('classic', config)) || DEFAULT_CLASSIC_TUNING
     var host = null
     var floatEl = null      // 呼吸浮动容器（70vh 区）
     var lineHost = null     // 行挂载点（AnimatePresence 等价）
     var currentLineEl = null
     var currentLineKey = null
-    var wordEls = []        // [{el, glowLayer, bodyLayer, word, config, renderProfile, status, rippleEl}]
+    var wordEls = []        // [{el, glowLayer, bodyLayer, word, config, renderProfile, status}]
     var intensity = 'normal'
     var fontScale = 1
     var theme = null
@@ -128,7 +135,8 @@
       var viewportWidth = window.innerWidth
       var pxFontSize = getPixelFontSize(fontScale, viewportWidth)
       var fontStack = fontFamily()
-      var fontWeight = 700
+      // 主歌词字重：样式设置窗口「字体」页全局覆盖（0=自动走模式内置 700）
+      var fontWeight = window.foliaGetLyricFontWeight ? window.foliaGetLyricFontWeight(700) : 700
       var wordWidths = displayWords.map(function (w) { return measureWordWidth(w.text, pxFontSize, fontStack, fontWeight) })
 
       var baseSpread = isChaotic ? 60 : isCalm ? 0 : 20
@@ -202,7 +210,7 @@
             xNext = (nextRandom(1) - 0.5) * baseSpread * 2
             wNext = wordWidths[i + 1] || 0
           }
-          var spacingMultiplier = 0.7 // 原版 DEFAULT wordSpacing
+          var spacingMultiplier = TUNING.wordSpacing // 原版 wordSpacing（设置窗口可调）
           var gap = 0.05 * pxFontSize
           var halfOverflowI = (wI * (sI - 1)) / 2
           var halfOverflowNext = (wNext * (sNext - 1)) / 2
@@ -596,6 +604,12 @@
       setTheme: setTheme,
       setLines: setLines,
       setFontScale: function (s) { fontScale = s === undefined ? 1 : s },
+      // 热更样式参数（wordSpacing 在每行渲染时读取，生效无需重建）
+      setTuning: function (partial) {
+        if (partial && Number.isFinite(Number(partial.wordSpacing))) {
+          TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('classic', partial)) || TUNING
+        }
+      },
       tick: tick,
       destroy: destroy
     }

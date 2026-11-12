@@ -95,7 +95,7 @@
       || watchState.elapsedMs >= limits.readyGraceMs
   }
 
-  function createMode() {
+  function createMode(config) {
     var host = null            // 宿主元素（registry 传入）
     var layerEl = null         // 模式根层（inset 0 / z-10 / overflow hidden）
     var pixiHost = null        // Pixi canvas 宿主
@@ -112,7 +112,8 @@
     var isPlaying = false
     var showText = true
     var fontScale = 1
-    var tuning = Core.DEFAULT_TEMPERA_TUNING   // 本插件无设置 UI，恒默认值
+    // tuning 为实例级（预览舞台与主页面可能同时运行本模式）；Pixi 运行时支持 setTuning 热更
+    var tuning = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('tempera', config)) || Core.DEFAULT_TEMPERA_TUNING
     var songTitle = null
     var songArtist = null
     var songAlbum = null
@@ -548,6 +549,14 @@
       setTheme: setTheme,
       setLines: setLines,
       setFontScale: setFontScale,
+      // 热更样式参数：转发给 Pixi 运行时（内部防抖重建），未挂载时仅更新本地引用
+      setTuning: function (partial) {
+        if (!partial) return
+        tuning = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('tempera', partial)) || tuning
+        if (runtime && typeof runtime.setTuning === 'function') {
+          try { runtime.setTuning(tuning) } catch (e) { /* 运行时热更失败走下次提交同步 */ }
+        }
+      },
       tick: tick,
       destroy: destroy
     }

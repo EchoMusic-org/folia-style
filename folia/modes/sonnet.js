@@ -19,7 +19,9 @@
   // 调制乘数表（原版 K3Panel mods；本插件无调制 UI，恒空 → mod() 回退 1）
   var MODULATION = undefined
 
-  function createMode() {
+  function createMode(config) {
+    // tuning 为实例级；Pixi 运行时创建时一次性注入，参数变化走重建路径
+    var tuning = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('sonnet', config)) || Core.DEFAULT_SONNET_TUNING
     var host = null            // 宿主元素（registry 传入）
     var layerEl = null         // 模式根层（inset 0 / z-10 / overflow hidden）
     var pixiHost = null        // Pixi canvas 宿主
@@ -36,7 +38,6 @@
     var isPlaying = false
     var showText = true
     var fontScale = 1
-    var tuning = Core.DEFAULT_SONNET_TUNING
     var songTitle = null
     var songArtist = null
     var songAlbum = null
