@@ -1135,16 +1135,24 @@
         card.appendChild(Kit.row('封面色彩', coverControl.root, { hint: '开启后背景叠层使用封面取色' }))
         colBody.appendChild(card)
         if (schema && schema.groups.length) {
+          // 拖动中先用本地 draft 显示（背景实例没有热更接口，松手才重建）；不维护 draft 的话
+          // renderSchema 的 visibleWhen 刷新会把滑条值重置回已保存值，拖动被弹回、松手写回旧值
+          var commonDraft = null
           var renderer = Kit.renderSchema(schema, {
             get: function () {
-              var tuning = tunings().getBgTuning('common')
+              var tuning = commonDraft || tunings().getBgTuning('common')
               return Object.assign({}, tuning, { useCoverColorBg: getState().coverBlur })
             },
             patch: function (key, value, commit) {
               if (key === 'useCoverColorBg') return
+              var current = commonDraft || tunings().getBgTuning('common')
+              var next = JSON.parse(JSON.stringify(current))
+              setPath(next, key, value)
+              commonDraft = next
               if (!commit) return
               tunings().setBgTuning('common', setPathPatch(key, value))
-              bridge().applyBgTuning('common', tunings().getBgTuning('common'))
+              commonDraft = tunings().getBgTuning('common')
+              bridge().applyBgTuning('common', commonDraft)
               rebuildBgPreview()
             }
           })
@@ -1152,12 +1160,19 @@
         }
       } else if (schema && schema.groups.length) {
         colBody.appendChild(card)
+        // 同上：滑条拖动用本地 draft，松手才写存储并重建背景
+        var bgDraft = null
         var renderer = Kit.renderSchema(schema, {
-          get: function () { return tunings().getBgTuning(bgId) },
+          get: function () { return bgDraft || tunings().getBgTuning(bgId) },
           patch: function (key, value, commit) {
+            var current = bgDraft || tunings().getBgTuning(bgId)
+            var next = JSON.parse(JSON.stringify(current))
+            setPath(next, key, value)
+            bgDraft = next
             if (!commit) return
             tunings().setBgTuning(bgId, setPathPatch(key, value))
-            bridge().applyBgTuning(bgId, tunings().getBgTuning(bgId))
+            bgDraft = tunings().getBgTuning(bgId)
+            bridge().applyBgTuning(bgId, bgDraft)
             rebuildBgPreview()
           }
         })
