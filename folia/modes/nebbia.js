@@ -432,7 +432,9 @@
   // ---------- 模式入口（上游 VisualizerNebbia.tsx 的外壳对应） ----------
 
   function createMode(tuning, config) {
-    var TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('nebbia', config)) || Core.DEFAULT_NEBBIA_TUNING
+    // 第一个参数才是归一化后的 tuning（主页面 switchMode 传 tuning、预览 previewCreate 传 config.tuning）；
+    // 第二参 config 只装 theme/lines/fontScale/previewMode 等运行配置
+    var TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('nebbia', tuning)) || Core.DEFAULT_NEBBIA_TUNING
     TUNING = Core.normalizeNebbiaTuning(TUNING)
     // 预览实例（样式窗口舞台/缩略图）：分辨率 1、透出不透出按预览判定
     var definitionPreview = Boolean(config && config.previewMode)

@@ -37,7 +37,9 @@
   }
 
   function createMode(tuning, config) {
-    var TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('hanabi', config)) || Core.DEFAULT_HANABI_TUNING
+    // 第一个参数才是归一化后的 tuning（主页面 switchMode 传 tuning、预览 previewCreate 传 config.tuning）；
+    // 第二参 config 只装 theme/lines/fontScale/previewMode 等运行配置
+    var TUNING = (window.FoliaTunings && window.FoliaTunings.resolveModeTuning('hanabi', tuning)) || Core.DEFAULT_HANABI_TUNING
     TUNING = Core.normalizeHanabiTuning(TUNING)
     // 预览实例（样式窗口舞台/缩略图）：分辨率 1、抗锯齿关、不做自动降级。
     var definitionPreview = Boolean(config && config.previewMode)
