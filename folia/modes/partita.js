@@ -353,6 +353,7 @@
         config: config,
         renderProfile: profile,
         status: null,
+        pose: null,
         activeColor: activeColor,
         guidePosition: guidePosition
       })
@@ -414,17 +415,20 @@
       var config = item.config
       var activeColor = item.activeColor
       var waiting = newStatus === 'waiting'
+      var waitingPose = {
+        x: config.x + (item.guidePosition === 'left' ? -40 : 40),
+        y: config.y,
+        scale: 0.85,
+        rotate: config.rotate
+      }
+      // 从块当前位姿出发：passed 目标与 active 末态一致，不再回弹到等待位姿
+      var fromPose = item.pose || waitingPose
+      var toPose = waiting ? waitingPose : { x: config.x, y: config.y, scale: 1, rotate: config.rotate }
+      item.pose = toPose
 
       Anim.animateProps(item.el, {
         opacity: { to: waiting ? 0 : 1 },
-        transform: {
-          from: waiting
-            ? { x: config.x + (item.guidePosition === 'left' ? -40 : 40), y: config.y, scale: 0.85, rotate: config.rotate }
-            : { x: config.x + (item.guidePosition === 'left' ? -40 : 40), y: config.y, scale: 0.85, rotate: config.rotate },
-          to: waiting
-            ? { x: config.x + (item.guidePosition === 'left' ? -40 : 40), y: config.y, scale: 0.85, rotate: config.rotate }
-            : { x: config.x, y: config.y, scale: 1, rotate: config.rotate }
-        }
+        transform: { from: fromPose, to: toPose }
       }, newStatus === 'active'
         ? { type: 'spring', stiffness: 200, damping: 20, opacity: { duration: 0.1 } }
         : { duration: 0.4, ease: 'easeOut' })
@@ -450,6 +454,7 @@
 
     // 词状态机（复用 classic 的三态逻辑，块位置由 chunk 容器持有）
     function applyWordState(item, newStatus) {
+      item.status = newStatus
       var config = item.config
       var word = item.word
       var profile = item.renderProfile
@@ -649,6 +654,21 @@
 
     function exitLine(line, profile) {
       if (!line) return
+      // 上游 AnimatePresence mode="popLayout"：退场行先脱离文档流（按当前布局盒钉在原位），
+      // 否则它会继续占着 lineHost 的 flex 位，把同帧挂载的新行挤压偏移、等移除后才弹回
+      if (line.offsetParent) {
+        var pinLeft = line.offsetLeft
+        var pinTop = line.offsetTop
+        var pinWidth = line.offsetWidth
+        var pinHeight = line.offsetHeight
+        line.style.position = 'absolute'
+        line.style.left = pinLeft + 'px'
+        line.style.top = pinTop + 'px'
+        line.style.width = pinWidth + 'px'
+        line.style.height = pinHeight + 'px'
+        line.style.margin = '0'
+        line.style.pointerEvents = 'none'
+      }
       var motion = lineContainerMotion(profile)
       Anim.animateProps(line, {
         opacity: { to: motion.exit.opacity },
@@ -711,8 +731,9 @@
         var previousProfile = chunks.length ? chunks[0].renderProfile : null
         words = []
         chunks = []
-        renderLine(line, frameState.currentLineIndex)
+        // 先退场旧行（脱离文档流）再渲染新行，保证新行首帧就拿到完整的独占布局
         if (previousEl) exitLine(previousEl, previousProfile)
+        renderLine(line, frameState.currentLineIndex)
       }
 
       updateChunkStates(now)

@@ -7,10 +7,14 @@
   'use strict'
 
   // vendor 库清单：按需懒加载（原版对应 React.lazy 的模式级懒加载）
+  // optional: 纯增强型库，加载失败只 warn 不阻断模式创建（消费方自行兜底降级）；
+  // 其余为模式刚性依赖（pixi/three/pretext/paperShaders/twgl），失败照常 reject 进失败自愈。
   var VENDOR_LIBS = {
     pixi: { file: 'vendor/pixi.min.js', globalCheck: function () { return window.PIXI } },
     three: { file: 'vendor/three.iife.js', globalCheck: function () { return window.THREE } },
-    smaa: { file: 'vendor/smaa.iife.js', globalCheck: function () { return window.FoliaSmaa } },
+    // smaa 是唯一可选库：町景 MachiPost 在 window.FoliaSmaa 缺失时自动退回 FXAA 兜底，
+    // 运行目录漏拷/更新后文件丢失等场景不应砖掉整个町景
+    smaa: { file: 'vendor/smaa.iife.js', optional: true, globalCheck: function () { return window.FoliaSmaa } },
     pretext: { file: 'vendor/pretext.iife.js', globalCheck: function () { return window.Pretext } },
     paperShaders: { file: 'vendor/paper-shaders.iife.js', globalCheck: function () { return window.PaperShaders } },
     twgl: { file: 'vendor/twgl-full.min.js', globalCheck: function () { return window.twgl } }
@@ -234,7 +238,15 @@
     for (var i = 0; i < vendorNames.length; i += 1) {
       var lib = VENDOR_LIBS[vendorNames[i]]
       if (!lib) continue
-      if (!lib.globalCheck()) await loadScript(lib.file)
+      if (!lib.globalCheck()) {
+        try {
+          await loadScript(lib.file)
+        } catch (e) {
+          if (!lib.optional) throw e
+          // 可选 vendor：加载失败只降级不阻断（loadScript 出错不缓存，下次切换模式自动重试）
+          console.warn('[FoliaRegistry] 可选 vendor 加载失败，相关模式降级运行:', e && e.message)
+        }
+      }
     }
   }
 

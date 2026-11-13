@@ -482,7 +482,8 @@
         : null
       if (frozen) {
         // cloneNode 不复制 canvas 位图，经 FoliaFrozenPicture.clone 重画后再挂载
-        var frozenCopy = window.FoliaFrozenPicture && window.FoliaFrozenPicture.clone
+        // （frozen 非空即代表命名空间存在，这里只需再探 clone 方法是否可用）
+        var frozenCopy = window.FoliaFrozenPicture.clone
           ? window.FoliaFrozenPicture.clone(frozen)
           : frozen.cloneNode(true)
         mountFrozenThumb(frozenCopy, card, canvas, label)

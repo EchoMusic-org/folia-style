@@ -44,7 +44,7 @@ INTEGRATION.md           # bridge.html 接入规范（历史文档，集成已�
     lyrics-data.js         # 行数据适配（宿主毫秒行 → 原版 Line 秒制 + renderHints 推导 + 行索引查找）
     tunings.js             # 样式参数数据层：14 模式 + 背景的 schema（键/label/范围/默认）+ 读写/归一化/持久化 + 外观（字体/字幕/透明度）+ 随机池
     subtitle-overlay.js    # 共享底部字幕（翻译/罗马音 + 下一句预览；读取 folia-appearance.subtitle 设置）
-    registry.js            # 14 种模式注册表（id/label/文件清单/vendor 懒加载/旧 id 映射；switchMode 传 tuning，previewCreate 供舞台用）
+    registry.js            # 14 种模式注册表（id/label/文件清单/vendor 懒加载/旧 id 映射；switchMode 传 tuning，previewCreate 供舞台用；smaa 为可选 vendor，缺失/加载失败只降级 FXAA 不阻断模式）
   modes/                 # 14 种模式；统一接口 create(tuning) → { id, mount, setTheme, setLines, setFontScale, [setTuning], tick(frameState), destroy }
     classic.js liuguang 已并入  # 流光（原版 classic，逐词弹性 + 双层发光，默认模式；tuning: wordSpacing）
     cadenza.js             # 心象（pretext 排版 + hero 强调 + 碰撞回避散落 + 指数平滑逐帧驱动；tuning: fontScale/widthRatio/motionAmount/glowIntensity 插件扩展）
